@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+
+# dotnet
+*.dll
+*.exe
+*.pdb
+
+.vscode/

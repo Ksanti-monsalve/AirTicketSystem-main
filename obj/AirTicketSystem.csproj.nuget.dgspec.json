@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/santimonsalve/Downloads/AirTicketSystem-main/AirTicketSystem.csproj": {}
+    "C:\\Users\\ASUS\\AirTicketSystem-main\\AirTicketSystem.csproj": {}
   },
   "projects": {
-    "/Users/santimonsalve/Downloads/AirTicketSystem-main/AirTicketSystem.csproj": {
+    "C:\\Users\\ASUS\\AirTicketSystem-main\\AirTicketSystem.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/santimonsalve/Downloads/AirTicketSystem-main/AirTicketSystem.csproj",
+        "projectUniqueName": "C:\\Users\\ASUS\\AirTicketSystem-main\\AirTicketSystem.csproj",
         "projectName": "AirTicketSystem",
-        "projectPath": "/Users/santimonsalve/Downloads/AirTicketSystem-main/AirTicketSystem.csproj",
-        "packagesPath": "/Users/santimonsalve/.nuget/packages/",
-        "outputPath": "/Users/santimonsalve/Downloads/AirTicketSystem-main/obj/",
+        "projectPath": "C:\\Users\\ASUS\\AirTicketSystem-main\\AirTicketSystem.csproj",
+        "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ASUS\\AirTicketSystem-main\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/santimonsalve/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -99,7 +99,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
