@@ -574,6 +574,49 @@ public sealed class SeedFullDataUseCase
         await availRepo.SaveAllAsync(dispV2);
         await availRepo.SaveAllAsync(dispV3);
 
+        // EXAMEN literal: poblar tabla 'flight_classes' y 'seats' también en el seed
+        // (Program.cs aplica migraciones antes del seed, así que las tablas ya existen).
+        var fcByCode = await dbContext.FlightClasses
+            .AsNoTracking()
+            .ToDictionaryAsync(fc => fc.Code, ct);
+
+        int MapServiceClassIdToFlightClassId(int serviceClassId)
+        {
+            // Del seed: Económica/EconómicaPlus -> ECO, Ejecutiva -> BUS, Primera -> FST
+            var fcCode = serviceClassId switch
+            {
+                _ when serviceClassId == claseY.Id => "ECO",
+                _ when serviceClassId == claseW.Id => "ECO",
+                _ when serviceClassId == claseC.Id => "BUS",
+                _ when serviceClassId == claseF.Id => "FST",
+                _ => "ECO"
+            };
+            return fcByCode[fcCode].Id;
+        }
+
+        async Task CrearSeatsParaVueloAsync(int flightId, List<AircraftSeat> seatsAircraft)
+        {
+            // Evitar duplicar si ya existen seats para ese vuelo
+            var existen = await dbContext.Seats.AsNoTracking().AnyAsync(s => s.FlightId == flightId, ct);
+            if (existen) return;
+
+            var entities = seatsAircraft.Select(a => new AirTicketSystem.modules.seat.Infrastructure.entity.SeatEntity
+            {
+                FlightId = flightId,
+                SeatNumber = a.CodigoAsiento.Valor,
+                FlightClassId = MapServiceClassIdToFlightClassId(a.ClaseServicioId),
+                Status = "Available"
+            }).ToList();
+
+            await dbContext.Seats.AddRangeAsync(entities, ct);
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        await CrearSeatsParaVueloAsync(vuelo1.Id, asientosHK4800);
+        await CrearSeatsParaVueloAsync(vuelo2.Id, asientosHK4800);
+        await CrearSeatsParaVueloAsync(vuelo3.Id, asientosHK5010);
+
+
         Log("reservas, pagos, tiquetes");
 
         var bookingRepo  = sp.GetRequiredService<IBookingRepository>();

@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using AirTicketSystem.shared.UI;
 using AirTicketSystem.shared.helpers;
 using AirTicketSystem.modules.flight.Application.UseCases;
-using AirTicketSystem.modules.seatavailability.Application.UseCases;
+using AirTicketSystem.modules.seat.Application.UseCases;
 
 namespace AirTicketSystem.UI.Admin.Flights;
 
@@ -90,14 +90,17 @@ public sealed class SeatClassAdminMenu
                 return;
             }
 
-            var tabla = SpectreHelper.CrearTabla("DispID", "N° asiento", "Clase", "Estado");
-            foreach (var s in asientos)
-                SpectreHelper.AgregarFila(tabla,
-                    s.DisponibilidadId.ToString(),
-                    s.NumeroAsiento,
-                    s.ClaseServicioNombre,
-                    s.Estado);
-            SpectreHelper.MostrarTabla(tabla);
+            // EXAMEN (punto 6): agrupar asientos por clase
+            foreach (var grupo in asientos
+                         .GroupBy(s => new { s.FlightClassId, s.FlightClassName })
+                         .OrderBy(g => g.Key.FlightClassName))
+            {
+                SpectreHelper.MostrarSubtitulo($"Clase: {grupo.Key.FlightClassName} (ID {grupo.Key.FlightClassId})");
+                var tabla = SpectreHelper.CrearTabla("SeatID", "SeatNumber", "Status");
+                foreach (var s in grupo.OrderBy(x => x.SeatNumber))
+                    SpectreHelper.AgregarFila(tabla, s.Id.ToString(), s.SeatNumber, s.Status);
+                SpectreHelper.MostrarTabla(tabla);
+            }
             SpectreHelper.MostrarInfo($"Total asientos: {asientos.Count}");
             SpectreHelper.EsperarTecla();
         });
@@ -111,7 +114,7 @@ public sealed class SeatClassAdminMenu
             await using var scope = _provider.CreateAsyncScope();
             var ocupados = await scope.ServiceProvider
                 .GetRequiredService<GetSeatDetailsByFlightUseCase>()
-                .ExecuteAsync(vueloId, estado: "OCUPADO");
+                .ExecuteAsync(vueloId, status: "Occupied");
 
             if (ocupados.Count == 0)
             {
@@ -120,13 +123,13 @@ public sealed class SeatClassAdminMenu
                 return;
             }
 
-            var tabla = SpectreHelper.CrearTabla("DispID", "N° asiento", "Clase", "Estado");
+            var tabla = SpectreHelper.CrearTabla("SeatID", "N° asiento", "Clase", "Estado");
             foreach (var s in ocupados)
                 SpectreHelper.AgregarFila(tabla,
-                    s.DisponibilidadId.ToString(),
-                    s.NumeroAsiento,
-                    s.ClaseServicioNombre,
-                    s.Estado);
+                    s.Id.ToString(),
+                    s.SeatNumber,
+                    s.FlightClassName,
+                    s.Status);
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.MostrarInfo($"Total ocupados: {ocupados.Count}");
             SpectreHelper.EsperarTecla();
@@ -156,14 +159,14 @@ public sealed class SeatClassAdminMenu
 
             foreach (var s in stats)
                 SpectreHelper.AgregarFila(tabla,
-                    s.ClaseServicioId.ToString(),
-                    s.ClaseServicioCodigo,
-                    s.ClaseServicioNombre,
+                    s.FlightClassId.ToString(),
+                    s.FlightClassCode,
+                    s.FlightClassName,
                     s.Total.ToString(),
-                    s.Disponibles.ToString(),
-                    s.Reservados.ToString(),
-                    s.Ocupados.ToString(),
-                    s.Bloqueados.ToString());
+                    s.Available.ToString(),
+                    s.Reserved.ToString(),
+                    s.Occupied.ToString(),
+                    s.Blocked.ToString());
 
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.EsperarTecla();
@@ -188,16 +191,16 @@ public sealed class SeatClassAdminMenu
             }
 
             var total = stats.Sum(s => s.Total);
-            var ocupados = stats.Sum(s => s.Ocupados);
+            var ocupados = stats.Sum(s => s.Occupied);
             var porcentaje = total == 0 ? 0m : (decimal)ocupados * 100m / (decimal)total;
 
             var tabla = SpectreHelper.CrearTabla("Clase", "Ocupados", "Total", "% ocupación");
             foreach (var s in stats)
             {
-                var pct = s.Total == 0 ? 0m : (decimal)s.Ocupados * 100m / (decimal)s.Total;
+                var pct = s.Total == 0 ? 0m : (decimal)s.Occupied * 100m / (decimal)s.Total;
                 SpectreHelper.AgregarFila(tabla,
-                    s.ClaseServicioNombre,
-                    s.Ocupados.ToString(),
+                    s.FlightClassName,
+                    s.Occupied.ToString(),
                     s.Total.ToString(),
                     $"{pct:F2}%");
             }

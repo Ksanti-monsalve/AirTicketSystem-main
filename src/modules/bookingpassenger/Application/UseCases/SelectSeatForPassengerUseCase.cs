@@ -1,6 +1,7 @@
 using AirTicketSystem.modules.booking.Domain.Repositories;
 using AirTicketSystem.modules.bookingpassenger.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.Repositories;
+using AirTicketSystem.modules.seat.Domain.Repositories;
 
 namespace AirTicketSystem.modules.bookingpassenger.Application.UseCases;
 
@@ -13,26 +14,31 @@ public sealed class SelectSeatForPassengerUseCase
     private readonly IBookingPassengerRepository _passengerRepository;
     private readonly IBookingRepository          _bookingRepository;
     private readonly ISeatAvailabilityRepository _seatAvailabilityRepository;
+    private readonly ISeatRepository             _seatRepository;
 
     public SelectSeatForPassengerUseCase(
         IBookingPassengerRepository passengerRepository,
         IBookingRepository          bookingRepository,
-        ISeatAvailabilityRepository seatAvailabilityRepository)
+        ISeatAvailabilityRepository seatAvailabilityRepository,
+        ISeatRepository             seatRepository)
     {
         _passengerRepository        = passengerRepository;
         _bookingRepository          = bookingRepository;
         _seatAvailabilityRepository = seatAvailabilityRepository;
+        _seatRepository             = seatRepository;
     }
 
     public async Task SelectAsync(
         int pasajeroReservaId,
         int vueloId,
-        int claseServicioId,
-        string numeroAsiento,
+        int flightClassId,
+        string seatNumber,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(numeroAsiento))
+        if (string.IsNullOrWhiteSpace(seatNumber))
             throw new ArgumentException("Debe indicar el número de asiento.");
+        if (flightClassId <= 0)
+            throw new ArgumentException("Debe indicar la clase de vuelo.");
 
         var passenger = await _passengerRepository.FindByIdAsync(pasajeroReservaId)
             ?? throw new KeyNotFoundException(
@@ -57,33 +63,41 @@ public sealed class SelectSeatForPassengerUseCase
             throw new InvalidOperationException(
                 "El vuelo seleccionado no coincide con el vuelo de la reserva.");
 
-        // Regla: no duplicar asiento en otra reserva (estado DISPONIBLE lo garantiza)
-        // y validar que el asiento existe / pertenece al vuelo / pertenece a la clase / está disponible.
-        var disponibles = await _seatAvailabilityRepository
-            .FindDetallesDisponiblesByVueloAndClaseAsync(vueloId, claseServicioId);
+        // EXAMEN literal: validar y reservar sobre tabla 'seats'
+        var normalized = seatNumber.Trim().ToUpperInvariant();
+        var available = await _seatRepository.FindAvailableDetailsByFlightAndClassAsync(vueloId, flightClassId);
+        var seat = available.FirstOrDefault(s =>
+            string.Equals(s.SeatNumber, normalized, StringComparison.OrdinalIgnoreCase));
 
-        var numeroNormalizado = numeroAsiento.Trim().ToUpperInvariant();
-        var seleccionado = disponibles.FirstOrDefault(s =>
-            string.Equals(s.NumeroAsiento, numeroNormalizado, StringComparison.OrdinalIgnoreCase));
-
-        if (seleccionado is null)
+        if (seat is null)
             throw new InvalidOperationException(
                 "El asiento no existe, no pertenece a la clase seleccionada, " +
-                "o no está disponible para este vuelo.");
+                "o no está disponible para este vuelo (tabla seats).");
 
-        // 1) Reservar asiento en forma ATÓMICA (evita doble reserva concurrente)
-        var reservado = await _seatAvailabilityRepository
-            .TryReserveDisponibilidadAsync(seleccionado.DisponibilidadId);
+        var ok = await _seatRepository.TryReserveAsync(seat.Id);
+        if (!ok)
+            throw new InvalidOperationException(
+                "El asiento ya no está disponible (puede estar Reserved, Occupied o Blocked).");
 
+        await _seatRepository.SetBookingIdAsync(seat.Id, booking.Id);
+
+        // Compatibilidad con el resto del sistema: mantener disponibilidad_asientos + pasajero.asiento_id
+        // (pasajeros_reserva.asiento_id referencia disponibilidad_asientos.id en este proyecto).
+        var dispDisponibles = await _seatAvailabilityRepository.FindDetallesByVueloAsync(vueloId, estado: "DISPONIBLE");
+        var disp = dispDisponibles.FirstOrDefault(d =>
+            string.Equals(d.NumeroAsiento, normalized, StringComparison.OrdinalIgnoreCase));
+        if (disp is null)
+            throw new InvalidOperationException(
+                "Se reservó en tabla seats, pero no se encontró la disponibilidad correspondiente (disponibilidad_asientos).");
+
+        var reservado = await _seatAvailabilityRepository.TryReserveDisponibilidadAsync(disp.DisponibilidadId);
         if (!reservado)
             throw new InvalidOperationException(
-                "El asiento ya no está disponible (puede estar RESERVADO, OCUPADO o BLOQUEADO).");
+                "Se reservó en tabla seats, pero la disponibilidad ya no está DISPONIBLE.");
 
-        // Persistencia (examen): asociar el asiento a la reserva
-        await _seatAvailabilityRepository.SetReservaIdAsync(seleccionado.DisponibilidadId, booking.Id);
+        await _seatAvailabilityRepository.SetReservaIdAsync(disp.DisponibilidadId, booking.Id);
 
-        // 2) Asociar a pasajero-reserva (guarda el ID de disponibilidad_asientos)
-        passenger.AsignarAsiento(seleccionado.DisponibilidadId);
+        passenger.AsignarAsiento(disp.DisponibilidadId);
         await _passengerRepository.UpdateAsync(passenger);
     }
 }

@@ -4,6 +4,7 @@ using AirTicketSystem.modules.ticket.Domain.Repositories;
 using AirTicketSystem.modules.bookingpassenger.Domain.Repositories;
 using AirTicketSystem.modules.booking.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.Repositories;
+using AirTicketSystem.modules.seat.Domain.Repositories;
 
 namespace AirTicketSystem.modules.ticket.Application.UseCases;
 
@@ -13,17 +14,20 @@ public sealed class EmitTicketUseCase
     private readonly IBookingPassengerRepository _passengerRepository;
     private readonly IBookingRepository          _bookingRepository;
     private readonly ISeatAvailabilityRepository _seatAvailabilityRepository;
+    private readonly ISeatRepository             _seatRepository;
 
     public EmitTicketUseCase(
         ITicketRepository           ticketRepository,
         IBookingPassengerRepository passengerRepository,
         IBookingRepository          bookingRepository,
-        ISeatAvailabilityRepository seatAvailabilityRepository)
+        ISeatAvailabilityRepository seatAvailabilityRepository,
+        ISeatRepository             seatRepository)
     {
         _ticketRepository    = ticketRepository;
         _passengerRepository = passengerRepository;
         _bookingRepository   = bookingRepository;
         _seatAvailabilityRepository = seatAvailabilityRepository;
+        _seatRepository      = seatRepository;
     }
 
     public async Task<Ticket> ExecuteAsync(
@@ -78,6 +82,32 @@ public sealed class EmitTicketUseCase
         // Persistencia (examen): asociar disponibilidad-asiento al tiquete emitido
         if (passenger.AsientoId.HasValue)
             await _seatAvailabilityRepository.SetTiqueteIdAsync(passenger.AsientoId.Value, ticket.Id);
+
+        // EXAMEN (literal): asociar Seat.TicketId y marcar Occupied en tabla 'seats'
+        if (passenger.AsientoId.HasValue)
+        {
+            // Ubicar Seat por (flightId + seatNumber) para mantener consistencia con el modelo Seat
+            var detalle = await _seatAvailabilityRepository
+                .FindDetalleByDisponibilidadIdAsync(passenger.AsientoId.Value);
+
+            if (detalle is not null)
+            {
+                // Buscar el seat id que corresponda a ese vuelo y número
+                var all = await _seatRepository.FindDetailsByFlightAsync(detalle.VueloId);
+                var seat = all.FirstOrDefault(s =>
+                    string.Equals(s.SeatNumber, detalle.NumeroAsiento, StringComparison.OrdinalIgnoreCase));
+
+                if (seat is not null)
+                {
+                    // En seats debe estar Reserved para poder pasar a Occupied
+                    var ok2 = await _seatRepository.TryOccupyAsync(seat.Id);
+                    if (!ok2)
+                        throw new InvalidOperationException(
+                            "No se puede emitir el tiquete porque el asiento no está en estado Reserved (tabla seats).");
+                    await _seatRepository.SetTicketIdAsync(seat.Id, ticket.Id);
+                }
+            }
+        }
 
         return ticket;
     }

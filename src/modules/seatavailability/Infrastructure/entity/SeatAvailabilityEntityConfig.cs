@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using AirTicketSystem.modules.booking.Infrastructure.entity;
+using AirTicketSystem.modules.serviceclass.Infrastructure.entity;
 using AirTicketSystem.modules.ticket.Infrastructure.entity;
 
 namespace AirTicketSystem.modules.seatavailability.Infrastructure.entity;
@@ -40,6 +41,12 @@ public class SeatAvailabilityEntityConfig : IEntityTypeConfiguration<SeatAvailab
         builder.HasOne(sa => sa.Asiento)
             .WithMany(a => a.Disponibilidades)
             .HasForeignKey(sa => sa.AsientoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Requisito EXAMEN: la clase de vuelo debe estar relacionada (FK real)
+        builder.HasOne<ServiceClassEntity>()
+            .WithMany()
+            .HasForeignKey(sa => sa.ClaseVueloId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // IMPORTANTE: usar navegación explícita para evitar columnas sombra (ReservaId1)

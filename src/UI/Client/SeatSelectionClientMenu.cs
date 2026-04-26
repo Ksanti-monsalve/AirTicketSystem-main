@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using AirTicketSystem.shared.UI;
 using AirTicketSystem.shared.helpers;
-using AirTicketSystem.modules.seatavailability.Application.UseCases;
+using AirTicketSystem.modules.seat.Application.UseCases;
 using AirTicketSystem.modules.booking.Application.UseCases;
 using AirTicketSystem.modules.bookingpassenger.Application.UseCases;
 using AirTicketSystem.modules.client.Application.UseCases;
@@ -18,7 +18,7 @@ public sealed class SeatSelectionClientMenu
     private readonly SessionContext   _session;
 
     private int? _vueloIdSeleccionado;
-    private int? _claseSeleccionadaId;
+    private int? _flightClassSeleccionadaId;
 
     public SeatSelectionClientMenu(IServiceProvider provider, SessionContext session)
     {
@@ -88,7 +88,7 @@ public sealed class SeatSelectionClientMenu
             var vuelo = await SelectorUI.SeleccionarVueloProgramadoAsync(_provider);
             if (vuelo is null) return;
             _vueloIdSeleccionado = vuelo.Id;
-            _claseSeleccionadaId = null;
+            _flightClassSeleccionadaId = null;
             SpectreHelper.MostrarExito($"Vuelo seleccionado: {vuelo.NumeroVuelo.Valor} (ID {vuelo.Id}).");
             SpectreHelper.EsperarTecla();
         });
@@ -106,12 +106,12 @@ public sealed class SeatSelectionClientMenu
                 if (vuelo is null) return;
                 vueloId = vuelo.Id;
                 _vueloIdSeleccionado = vueloId;
-                _claseSeleccionadaId = null;
+                _flightClassSeleccionadaId = null;
             }
 
             await using var scope = _provider.CreateAsyncScope();
             var clases = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableClassesByFlightUseCase>()
+                .GetRequiredService<GetAvailableFlightClassesByFlightUseCase>()
                 .ExecuteAsync(vueloId.Value);
 
             if (clases.Count == 0)
@@ -125,12 +125,12 @@ public sealed class SeatSelectionClientMenu
                     var tablaStats = SpectreHelper.CrearTabla("Clase", "Total", "Disp", "Res", "Ocup", "Bloq");
                     foreach (var s in stats)
                         SpectreHelper.AgregarFila(tablaStats,
-                            s.ClaseServicioNombre,
+                            s.FlightClassName,
                             s.Total.ToString(),
-                            s.Disponibles.ToString(),
-                            s.Reservados.ToString(),
-                            s.Ocupados.ToString(),
-                            s.Bloqueados.ToString());
+                            s.Available.ToString(),
+                            s.Reserved.ToString(),
+                            s.Occupied.ToString(),
+                            s.Blocked.ToString());
                     SpectreHelper.MostrarTabla(tablaStats);
                 }
 
@@ -139,23 +139,23 @@ public sealed class SeatSelectionClientMenu
                 return;
             }
 
-            var tabla = SpectreHelper.CrearTabla("ClaseID", "Código", "Nombre", "Disponibles");
+            var tabla = SpectreHelper.CrearTabla("FlightClassId", "Code", "Name", "Available");
             foreach (var c in clases)
                 SpectreHelper.AgregarFila(tabla,
-                    c.ClaseServicioId.ToString(),
-                    c.ClaseServicioCodigo,
-                    c.ClaseServicioNombre,
-                    c.CantidadDisponible.ToString());
+                    c.FlightClassId.ToString(),
+                    c.FlightClassCode,
+                    c.FlightClassName,
+                    c.Available.ToString());
             SpectreHelper.MostrarTabla(tabla);
 
             var seleccion = SpectreHelper.SeleccionarOpcion(
                 "Seleccione la clase",
                 clases,
-                c => $"  [{c.ClaseServicioCodigo}] {c.ClaseServicioNombre}  ({c.CantidadDisponible} disponibles)");
+                c => $"  [{c.FlightClassCode}] {c.FlightClassName}  ({c.Available} disponibles)");
 
             _vueloIdSeleccionado = vueloId.Value;
-            _claseSeleccionadaId = seleccion.ClaseServicioId;
-            SpectreHelper.MostrarExito($"Clase seleccionada: {seleccion.ClaseServicioNombre}.");
+            _flightClassSeleccionadaId = seleccion.FlightClassId;
+            SpectreHelper.MostrarExito($"Clase seleccionada: {seleccion.FlightClassName}.");
             SpectreHelper.EsperarTecla();
         });
     }
@@ -173,16 +173,16 @@ public sealed class SeatSelectionClientMenu
                 if (vuelo is null) return;
                 vueloId = vuelo.Id;
                 _vueloIdSeleccionado = vueloId;
-                _claseSeleccionadaId = null;
+                _flightClassSeleccionadaId = null;
             }
 
-            var claseId = _claseSeleccionadaId;
+            var flightClassId = _flightClassSeleccionadaId;
 
             await using var scope = _provider.CreateAsyncScope();
-            if (!claseId.HasValue)
+            if (!flightClassId.HasValue)
             {
                 var clases = await scope.ServiceProvider
-                    .GetRequiredService<GetAvailableClassesByFlightUseCase>()
+                    .GetRequiredService<GetAvailableFlightClassesByFlightUseCase>()
                     .ExecuteAsync(vueloId.Value);
                 if (clases.Count == 0)
                 {
@@ -194,12 +194,12 @@ public sealed class SeatSelectionClientMenu
                         var tablaStats = SpectreHelper.CrearTabla("Clase", "Total", "Disp", "Res", "Ocup", "Bloq");
                         foreach (var s in stats)
                             SpectreHelper.AgregarFila(tablaStats,
-                                s.ClaseServicioNombre,
+                                s.FlightClassName,
                                 s.Total.ToString(),
-                                s.Disponibles.ToString(),
-                                s.Reservados.ToString(),
-                                s.Ocupados.ToString(),
-                                s.Bloqueados.ToString());
+                                s.Available.ToString(),
+                                s.Reserved.ToString(),
+                                s.Occupied.ToString(),
+                                s.Blocked.ToString());
                         SpectreHelper.MostrarTabla(tablaStats);
                     }
                     SpectreHelper.MostrarInfo("No hay asientos disponibles para ese vuelo.");
@@ -209,17 +209,17 @@ public sealed class SeatSelectionClientMenu
                 var sel = SpectreHelper.SeleccionarOpcion(
                     "Seleccione la clase",
                     clases,
-                    c => $"  [{c.ClaseServicioCodigo}] {c.ClaseServicioNombre}  ({c.CantidadDisponible} disponibles)");
-                claseId = sel.ClaseServicioId;
+                    c => $"  [{c.FlightClassCode}] {c.FlightClassName}  ({c.Available} disponibles)");
+                flightClassId = sel.FlightClassId;
                 _vueloIdSeleccionado = vueloId.Value;
-                _claseSeleccionadaId = claseId;
+                _flightClassSeleccionadaId = flightClassId;
             }
 
             var asientos = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableSeatDetailsByFlightAndClassUseCase>()
-                .ExecuteAsync(vueloId.Value, claseId.Value);
+                .GetRequiredService<GetAvailableSeatsByFlightAndClassUseCase>()
+                .ExecuteAsync(vueloId.Value, flightClassId.Value);
 
-            SpectreHelper.MostrarInfo($"VueloID={vueloId.Value} ClaseID={claseId.Value} → Disponibles={asientos.Count}");
+            SpectreHelper.MostrarInfo($"FlightId={vueloId.Value} FlightClassId={flightClassId.Value} → Available={asientos.Count}");
 
             if (asientos.Count == 0)
             {
@@ -232,9 +232,9 @@ public sealed class SeatSelectionClientMenu
             var tabla = SpectreHelper.CrearTabla("N° asiento", "Clase", "Estado");
             foreach (var s in asientos)
                 SpectreHelper.AgregarFila(tabla,
-                    s.NumeroAsiento,
-                    s.ClaseServicioNombre,
-                    s.Estado);
+                    s.SeatNumber,
+                    s.FlightClassName,
+                    s.Status);
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.MostrarInfo($"Total disponibles: {asientos.Count}");
             SpectreHelper.EsperarTecla();
@@ -269,7 +269,7 @@ public sealed class SeatSelectionClientMenu
 
             // 3) Seleccionar clase (solo clases con asientos disponibles)
             var clases = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableClassesByFlightUseCase>()
+                .GetRequiredService<GetAvailableFlightClassesByFlightUseCase>()
                 .ExecuteAsync(vueloId);
             if (clases.Count == 0)
                 throw new InvalidOperationException("No hay clases con asientos disponibles para este vuelo.");
@@ -277,19 +277,19 @@ public sealed class SeatSelectionClientMenu
             var claseSel = SpectreHelper.SeleccionarOpcion(
                 "Seleccione la clase",
                 clases,
-                c => $"  [{c.ClaseServicioCodigo}] {c.ClaseServicioNombre}  ({c.CantidadDisponible} disponibles)");
+                c => $"  [{c.FlightClassCode}] {c.FlightClassName}  ({c.Available} disponibles)");
 
             // 4) Mostrar asientos disponibles de esa clase y elegir número (ej: 10A)
             var asientos = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableSeatDetailsByFlightAndClassUseCase>()
-                .ExecuteAsync(vueloId, claseSel.ClaseServicioId);
+                .GetRequiredService<GetAvailableSeatsByFlightAndClassUseCase>()
+                .ExecuteAsync(vueloId, claseSel.FlightClassId);
             if (asientos.Count == 0)
                 throw new InvalidOperationException("No hay asientos disponibles para esa clase.");
 
             var asientoSel = SpectreHelper.SeleccionarOpcion(
                 "Seleccione el asiento",
                 asientos,
-                s => $"  {s.NumeroAsiento}  —  {s.ClaseServicioNombre}");
+                s => $"  {s.SeatNumber}  —  {s.FlightClassName}");
 
             // 5) Validaciones + asignación + persistencia (RESERVADO + asociado a pasajero)
             await scope.ServiceProvider
@@ -297,8 +297,8 @@ public sealed class SeatSelectionClientMenu
                 .SelectAsync(
                     pasajeroReservaId: pasajero.Id,
                     vueloId: vueloId,
-                    claseServicioId: claseSel.ClaseServicioId,
-                    numeroAsiento: asientoSel.NumeroAsiento);
+                    flightClassId: claseSel.FlightClassId,
+                    seatNumber: asientoSel.SeatNumber);
 
             SpectreHelper.MostrarExito("Asiento reservado correctamente");
             SpectreHelper.EsperarTecla();

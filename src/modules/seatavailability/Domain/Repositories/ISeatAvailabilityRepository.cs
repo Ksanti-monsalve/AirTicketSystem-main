@@ -22,6 +22,7 @@ public interface ISeatAvailabilityRepository
     Task<bool> AsientoDisponibleAsync(int vueloId, int asientoId);
     Task<bool> TryReserveDisponibilidadAsync(int disponibilidadId);
     Task<bool> TryOccupyDisponibilidadAsync(int disponibilidadId);
+    Task<bool> TryReleaseDisponibilidadAsync(int disponibilidadId);
     Task SetReservaIdAsync(int disponibilidadId, int reservaId);
     Task SetTiqueteIdAsync(int disponibilidadId, int tiqueteId);
     Task<SeatAvailabilityDetail?> FindDetalleByDisponibilidadIdAsync(int disponibilidadId);

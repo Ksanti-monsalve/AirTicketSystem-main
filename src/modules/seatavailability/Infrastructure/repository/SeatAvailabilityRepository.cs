@@ -201,6 +201,21 @@ public sealed class SeatAvailabilityRepository : ISeatAvailabilityRepository
         return affected == 1;
     }
 
+    public async Task<bool> TryReleaseDisponibilidadAsync(int disponibilidadId)
+    {
+        // Liberación atómica: solo libera si está RESERVADO.
+        // Además, limpia las asociaciones con reserva/tiquete.
+        var affected = await _context.DisponibilidadAsientos
+            .Where(sa => sa.Id == disponibilidadId && sa.Estado == "RESERVADO")
+            .ExecuteUpdateAsync(setters =>
+                setters
+                    .SetProperty(sa => sa.Estado, "DISPONIBLE")
+                    .SetProperty(sa => sa.ReservaId, (int?)null)
+                    .SetProperty(sa => sa.TiqueteId, (int?)null));
+
+        return affected == 1;
+    }
+
     public async Task SetReservaIdAsync(int disponibilidadId, int reservaId)
     {
         if (reservaId <= 0)
