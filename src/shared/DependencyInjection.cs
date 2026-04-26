@@ -508,6 +508,7 @@ public static class DependencyInjection
         services.AddScoped<GetBookingByIdUseCase>();
         services.AddScoped<GetBookingByCodigoUseCase>();
         services.AddScoped<GetBookingsByClienteUseCase>();
+        services.AddScoped<GetAllBookingsUseCase>();
         services.AddScoped<ConfirmBookingUseCase>();
         services.AddScoped<CancelBookingUseCase>();
         services.AddScoped<ExpireBookingUseCase>();
@@ -607,6 +608,7 @@ public static class DependencyInjection
         services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetAvailableSeatsByFlightAndClassUseCase>();
         services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetSeatStatsByFlightUseCase>();
         services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetAvailableFlightClassesByFlightUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetSeatsByBookingUseCase>();
 
         // Worker
         services.AddScoped<CreateWorkerUseCase>();

@@ -21,14 +21,15 @@ public sealed class FlightMenu
         {
             SpectreHelper.MostrarTitulo("Vuelos");
 
+            // Orden: alta → consultas y monitoreo → reacomodo operativo → ciclo de embarque/vuelo → excepciones.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
+                    "Crear vuelo",
                     "Listar todos",
                     "Listar programados",
                     "Listar por fecha",
                     "Listar por ruta",
                     "Listar con check-in abierto",
-                    "Crear vuelo",
                     "Editar horarios / puerta",
                     "Asignar puerta",
                     "Abrir check-in",
@@ -36,19 +37,19 @@ public sealed class FlightMenu
                     "Iniciar vuelo",
                     "Registrar aterrizaje",
                     "Demorar vuelo",
-                    "Cancelar vuelo",
                     "Desviar vuelo",
+                    "Cancelar vuelo",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
+                case "Crear vuelo":                 await CrearAsync();                 break;
                 case "Listar todos":              await ListarTodosAsync();           break;
                 case "Listar programados":        await ListarProgramadosAsync();     break;
                 case "Listar por fecha":          await ListarPorFechaAsync();        break;
                 case "Listar por ruta":           await ListarPorRutaAsync();         break;
                 case "Listar con check-in abierto": await ListarCheckinAbiertoAsync(); break;
-                case "Crear vuelo":               await CrearAsync();                 break;
                 case "Editar horarios / puerta":  await EditarAsync();                break;
                 case "Asignar puerta":            await AsignarPuertaAsync();         break;
                 case "Abrir check-in":            await AbrirCheckinAsync();          break;
@@ -56,8 +57,8 @@ public sealed class FlightMenu
                 case "Iniciar vuelo":             await IniciarVueloAsync();          break;
                 case "Registrar aterrizaje":      await RegistrarAterrizajeAsync();   break;
                 case "Demorar vuelo":             await DemorarAsync();               break;
-                case "Cancelar vuelo":            await CancelarAsync();              break;
                 case "Desviar vuelo":             await DesviarAsync();               break;
+                case "Cancelar vuelo":            await CancelarAsync();              break;
                 case "Volver":                    return;
             }
         }

@@ -249,4 +249,29 @@ public static class SpectreHelper
         return await AnsiConsole.Status()
             .StartAsync($"[deepskyblue1]{Esc(mensaje)}[/]", async _ => await accion());
     }
+
+    // ── Examen: estados de asiento (tabla seats en inglés; disponibilidad en español) ──
+
+    /// <summary>Colores y etiquetas alineados al enunciado: Disponible, Reservado, Ocupado, Bloqueado.</summary>
+    public static string FormatearEstadoAsientoExamen(string? status)
+    {
+        return status switch
+        {
+            "Available"  or "DISPONIBLE" => "[bold green]Disponible[/]",
+            "Reserved"   or "RESERVADO"  => "[bold yellow]Reservado[/]",
+            "Occupied"   or "OCUPADO"    => "[bold red]Ocupado[/]",
+            "Blocked"    or "BLOQUEADO"  => "[grey]Bloqueado[/]",
+            _ => $"[white]{Esc(status)}[/]"
+        };
+    }
+
+    public static void MostrarLeyendaEstadosAsientoExamen()
+    {
+        AnsiConsole.MarkupLine("  [bold]Leyenda (examen):[/]  " +
+            FormatearEstadoAsientoExamen("Available") + "  " +
+            FormatearEstadoAsientoExamen("Reserved") + "  " +
+            FormatearEstadoAsientoExamen("Occupied") + "  " +
+            FormatearEstadoAsientoExamen("Blocked"));
+        AnsiConsole.WriteLine();
+    }
 }

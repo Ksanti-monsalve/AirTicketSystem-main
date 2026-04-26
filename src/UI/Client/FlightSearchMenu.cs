@@ -29,13 +29,14 @@ public sealed class FlightSearchMenu
         {
             SpectreHelper.MostrarTitulo("Buscar Vuelos y Reservar");
 
+            // Orden: búsqueda e inventario → asientos → reserva y pasajeros.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
                     "1.1 Buscar vuelos (origen, destino y fecha)",
                     "1.2 Ver vuelos próximos disponibles",
-                    "Ver asientos disponibles de un vuelo",
-                    "Crear reserva",
-                    "Agregar pasajero a reserva",
+                    "1.3 Ver asientos disponibles de un vuelo",
+                    "1.4 Crear reserva",
+                    "1.5 Agregar pasajero a reserva",
                     "Volver"
                 ]);
 
@@ -43,9 +44,9 @@ public sealed class FlightSearchMenu
             {
                 case "1.1 Buscar vuelos (origen, destino y fecha)": await BuscarVuelosAsync();        break;
                 case "1.2 Ver vuelos próximos disponibles":          await VuelosProximosAsync();      break;
-                case "Ver asientos disponibles de un vuelo":         await VerAsientosAsync();         break;
-                case "Crear reserva":                                await CrearReservaAsync();        break;
-                case "Agregar pasajero a reserva":                   await AgregarPasajeroAsync();     break;
+                case "1.3 Ver asientos disponibles de un vuelo":     await VerAsientosAsync();         break;
+                case "1.4 Crear reserva":                            await CrearReservaAsync();        break;
+                case "1.5 Agregar pasajero a reserva":               await AgregarPasajeroAsync();     break;
                 case "Volver":                                       return;
             }
         }

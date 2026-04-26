@@ -50,6 +50,7 @@ public sealed class CatalogosMenu
         {
             SpectreHelper.MostrarTitulo("Catálogos del Sistema");
 
+            // Orden: identidad y contacto → carga/venta; referencias cruzadas (7.8, 7.10) y RRHH al final.
             var opcion = SpectreHelper.SeleccionarOpcionTexto(
                 "Seleccione un catálogo",
                 [
@@ -63,9 +64,9 @@ public sealed class CatalogosMenu
                     "7.8 Restricciones de equipaje",
                     "7.9 Métodos de pago",
                     "7.10 Tarifas",
-                    "Clases de servicio",
-                    "Tipos de trabajador",
-                    "Especialidades",
+                    "7.11 Clases de servicio",
+                    "7.12 Tipos de trabajador",
+                    "7.13 Especialidades",
                     "Volver"
                 ]);
 
@@ -81,9 +82,9 @@ public sealed class CatalogosMenu
                 case "7.8 Restricciones de equipaje": SpectreHelper.MostrarInfo("Ver sección 2 → Aerolíneas y Flota → Restricciones."); SpectreHelper.EsperarTecla(); break;
                 case "7.9 Métodos de pago":     await PaymentMethodMenuAsync();       break;
                 case "7.10 Tarifas":            SpectreHelper.MostrarInfo("Ver sección 2 → Aerolíneas y Flota → Tarifas."); SpectreHelper.EsperarTecla(); break;
-                case "Clases de servicio":      await ServiceClassMenuAsync();        break;
-                case "Tipos de trabajador":     await WorkerTypeMenuAsync();          break;
-                case "Especialidades":          await SpecialtyMenuAsync();           break;
+                case "7.11 Clases de servicio":  await ServiceClassMenuAsync();        break;
+                case "7.12 Tipos de trabajador": await WorkerTypeMenuAsync();          break;
+                case "7.13 Especialidades":     await SpecialtyMenuAsync();          break;
                 case "Volver":                  return;
             }
         }

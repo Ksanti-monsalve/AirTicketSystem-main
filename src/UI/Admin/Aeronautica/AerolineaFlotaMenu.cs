@@ -16,6 +16,7 @@ public sealed class AerolineaFlotaMenu
         {
             SpectreHelper.MostrarTitulo("Gestión de Aerolíneas y Flota");
 
+            // Orden: infraestructura → red → fábrica de avión (fabricante → modelo → avión) → clases de servicio (referencia) → layout de asientos.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione un módulo",
                 [
                     "2.1 Aerolíneas",
@@ -26,8 +27,8 @@ public sealed class AerolineaFlotaMenu
                     "2.6 Fabricantes de avión",
                     "2.7 Modelos de avión",
                     "2.8 Aviones",
-                    "2.9 Asientos de avión",
-                    "2.10 Clases de servicio",
+                    "2.9 Clases de servicio",
+                    "2.10 Asientos de avión",
                     "Volver"
                 ]);
 
@@ -41,8 +42,8 @@ public sealed class AerolineaFlotaMenu
                 case "2.6 Fabricantes de avión": await new AircraftManufacturerMenu(_provider).MostrarAsync(); break;
                 case "2.7 Modelos de avión":     await new AircraftModelMenu(_provider).MostrarAsync();        break;
                 case "2.8 Aviones":              await new AircraftMenu(_provider).MostrarAsync();             break;
-                case "2.9 Asientos de avión":    await new AircraftSeatMenu(_provider).MostrarAsync();         break;
-                case "2.10 Clases de servicio":  await new ServiceClassMenuWrapper(_provider).MostrarAsync();  break;
+                case "2.9 Clases de servicio":  await new ServiceClassMenuWrapper(_provider).MostrarAsync();  break;
+                case "2.10 Asientos de avión":   await new AircraftSeatMenu(_provider).MostrarAsync();         break;
                 case "Volver":                   return;
             }
         }

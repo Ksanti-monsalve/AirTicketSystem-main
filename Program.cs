@@ -1,4 +1,5 @@
 // Program.cs
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -89,6 +90,14 @@ catch (Exception ex)
     Console.WriteLine("  Presione cualquier tecla para continuar (el sistema funcionará");
     Console.WriteLine("  pero sin datos de prueba precargados)...");
     Console.ReadKey(true);
+}
+
+// ── Probar flujo examen (admin 2/9 y cliente 2/11) sin menú interactivo ───────
+if (args.Any(a => string.Equals(a, "--examen-e2e", StringComparison.OrdinalIgnoreCase)))
+{
+    var code = await ExamenE2eSmokeRunner.RunAsync(provider);
+    Environment.Exit(code);
+    return;
 }
 
 // ── Bucle principal ──────────────────────────────────────────────────────────

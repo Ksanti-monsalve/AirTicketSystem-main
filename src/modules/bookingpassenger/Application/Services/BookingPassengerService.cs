@@ -37,8 +37,12 @@ public sealed class BookingPassengerService : IBookingPassengerService
     public Task<BookingPassenger> AssignSeatAsync(int pasajeroReservaId, int asientoId)
         => _assignSeat.ExecuteAsync(pasajeroReservaId, asientoId);
 
-    public Task<BookingPassenger> ChangeSeatAsync(int pasajeroReservaId, int nuevoAsientoId)
-        => _changeSeat.ExecuteAsync(pasajeroReservaId, nuevoAsientoId);
+    public Task<BookingPassenger> ChangeSeatAsync(
+        int pasajeroReservaId,
+        int flightClassId,
+        string nuevoNumeroAsiento,
+        CancellationToken cancellationToken = default)
+        => _changeSeat.ExecuteAsync(pasajeroReservaId, flightClassId, nuevoNumeroAsiento, cancellationToken);
 
     public Task<BookingPassenger> ReleaseSeatAsync(int pasajeroReservaId)
         => _releaseSeat.ExecuteAsync(pasajeroReservaId);

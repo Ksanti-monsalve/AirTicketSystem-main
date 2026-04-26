@@ -33,18 +33,19 @@ public sealed class MyBookingsMenu
         {
             SpectreHelper.MostrarTitulo("Mis Reservas");
 
+            // Orden: consulta e identidad de la reserva → pasajeros y pago → documento y embarque; cancelación al final.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
                     "2.1 Ver mis reservas",
                     "2.2 Detalle de reserva",
-                    "2.3 Cancelar mi reserva",
-                    "2.4 Hacer check-in virtual",
-                    "2.5 Mi pase de abordar",
-                    "2.6 Gestionar equipaje",
-                    "2.7 Ver mis tiquetes",
-                    "Pasajeros de mi reserva",
-                    "Mis pagos",
-                    "Emitir tiquete",
+                    "2.3 Pasajeros de mi reserva",
+                    "2.4 Mis pagos",
+                    "2.5 Emitir tiquete",
+                    "2.6 Hacer check-in virtual",
+                    "2.7 Mi pase de abordar",
+                    "2.8 Gestionar equipaje",
+                    "2.9 Ver mis tiquetes",
+                    "2.10 Cancelar mi reserva",
                     "Volver"
                 ]);
 
@@ -52,14 +53,14 @@ public sealed class MyBookingsMenu
             {
                 case "2.1 Ver mis reservas":        await VerReservasAsync();          break;
                 case "2.2 Detalle de reserva":      await DetalleReservaAsync();       break;
-                case "2.3 Cancelar mi reserva":     await CancelarReservaAsync();      break;
-                case "2.4 Hacer check-in virtual":  await HacerCheckinVirtualAsync();  break;
-                case "2.5 Mi pase de abordar":      await VerPaseAbordarAsync();       break;
-                case "2.6 Gestionar equipaje":      await GestionarEquipajeAsync();    break;
-                case "2.7 Ver mis tiquetes":        await ConsultarTiqueteAsync();     break;
-                case "Pasajeros de mi reserva":     await VerPasajerosAsync();         break;
-                case "Mis pagos":                   await VerPagosAsync();             break;
-                case "Emitir tiquete":              await VerTiquetesAsync();          break;
+                case "2.3 Pasajeros de mi reserva": await VerPasajerosAsync();         break;
+                case "2.4 Mis pagos":               await VerPagosAsync();             break;
+                case "2.5 Emitir tiquete":          await VerTiquetesAsync();         break;
+                case "2.6 Hacer check-in virtual":  await HacerCheckinVirtualAsync();  break;
+                case "2.7 Mi pase de abordar":      await VerPaseAbordarAsync();       break;
+                case "2.8 Gestionar equipaje":      await GestionarEquipajeAsync();    break;
+                case "2.9 Ver mis tiquetes":        await ConsultarTiqueteAsync();     break;
+                case "2.10 Cancelar mi reserva":     await CancelarReservaAsync();      break;
                 case "Volver":                      return;
             }
         }

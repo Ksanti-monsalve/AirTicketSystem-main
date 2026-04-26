@@ -9,6 +9,10 @@ public interface IBookingPassengerService
         int reservaId, int personaId, string tipoPasajero, int? asientoId);
     Task<IReadOnlyCollection<BookingPassenger>> GetByBookingAsync(int reservaId);
     Task<BookingPassenger> AssignSeatAsync(int pasajeroReservaId, int asientoId);
-    Task<BookingPassenger> ChangeSeatAsync(int pasajeroReservaId, int nuevoAsientoId);
+    Task<BookingPassenger> ChangeSeatAsync(
+        int pasajeroReservaId,
+        int flightClassId,
+        string nuevoNumeroAsiento,
+        CancellationToken cancellationToken = default);
     Task<BookingPassenger> ReleaseSeatAsync(int pasajeroReservaId);
 }
