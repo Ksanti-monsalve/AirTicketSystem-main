@@ -415,9 +415,9 @@ public sealed class SeedFullDataUseCase
         await acRepo.SaveAsync(avionHK5010);
 
         // Asientos (simplificados: 2 filas ejecutiva + 8 filas económica por avión)
-        var asientosHK4800 = await SeedAsientosAsync(seatRepo, avionHK4800.Id, claseC.Id, claseY.Id);
-        var asientosHK4801 = await SeedAsientosAsync(seatRepo, avionHK4801.Id, claseC.Id, claseY.Id);
-        var asientosHK5010 = await SeedAsientosAsync(seatRepo, avionHK5010.Id, claseC.Id, claseY.Id);
+        var asientosHK4800 = await SeedAsientosAsync(seatRepo, avionHK4800.Id, claseF.Id, claseC.Id, claseY.Id);
+        var asientosHK4801 = await SeedAsientosAsync(seatRepo, avionHK4801.Id, claseF.Id, claseC.Id, claseY.Id);
+        var asientosHK5010 = await SeedAsientosAsync(seatRepo, avionHK5010.Id, claseF.Id, claseC.Id, claseY.Id);
 
         Log("personal - trabajadores");
 
@@ -567,9 +567,9 @@ public sealed class SeedFullDataUseCase
             await crewRepo.SaveAsync(c);
 
         // Disponibilidad de asientos
-        var dispV1 = asientosHK4800.Select(a => SeatAvailability.Crear(vuelo1.Id, a.Id)).ToList();
-        var dispV2 = asientosHK4800.Select(a => SeatAvailability.Crear(vuelo2.Id, a.Id)).ToList();
-        var dispV3 = asientosHK5010.Select(a => SeatAvailability.Crear(vuelo3.Id, a.Id)).ToList();
+        var dispV1 = asientosHK4800.Select(a => SeatAvailability.Crear(vuelo1.Id, a.Id, a.CodigoAsiento.Valor, a.ClaseServicioId)).ToList();
+        var dispV2 = asientosHK4800.Select(a => SeatAvailability.Crear(vuelo2.Id, a.Id, a.CodigoAsiento.Valor, a.ClaseServicioId)).ToList();
+        var dispV3 = asientosHK5010.Select(a => SeatAvailability.Crear(vuelo3.Id, a.Id, a.CodigoAsiento.Valor, a.ClaseServicioId)).ToList();
         await availRepo.SaveAllAsync(dispV1);
         await availRepo.SaveAllAsync(dispV2);
         await availRepo.SaveAllAsync(dispV3);
@@ -588,6 +588,7 @@ public sealed class SeedFullDataUseCase
 
         // Asiento económico fila 5A en HK-4800 (para la reserva de Juan)
         var asientoJuan = asientosHK4800.First(a => a.ClaseServicioId == claseY.Id);
+        var dispJuan = dispV1.First(d => d.AsientoId == asientoJuan.Id);
 
         // Reserva 1 — Juan en AV0101 (Básica) → CONFIRMADA
         var reservaJuan = Booking.Crear(clienteJuan.Id, vuelo1.Id, tarifaBasicaAVMDE.Id,
@@ -601,13 +602,13 @@ public sealed class SeedFullDataUseCase
         await bookingRepo.SaveAsync(reservaLaura);
 
         // Pasajeros
-        var paxJuan  = BookingPassenger.CrearAdulto(reservaJuan.Id,  perJuan.Id,  asientoJuan.Id);
+        // IMPORTANTE: pasajeros_reserva.asiento_id referencia disponibilidad_asientos.id (no asientos_avion.id)
+        var paxJuan  = BookingPassenger.CrearAdulto(reservaJuan.Id,  perJuan.Id,  dispJuan.Id);
         var paxLaura = BookingPassenger.CrearAdulto(reservaLaura.Id, perLaura.Id, null);
         await paxRepo.SaveAsync(paxJuan);
         await paxRepo.SaveAsync(paxLaura);
 
         // Reservar asiento de Juan en disponibilidad
-        var dispJuan = dispV1.First(d => d.AsientoId == asientoJuan.Id);
         dispJuan.Reservar();
         await availRepo.UpdateAsync(dispJuan);
 
@@ -664,10 +665,21 @@ public sealed class SeedFullDataUseCase
     private static async Task<List<AircraftSeat>> SeedAsientosAsync(
         IAircraftSeatRepository repo,
         int avionId,
+        int clasePrimera,
         int claseEjec,
         int claseEco)
     {
         var lista = new List<AircraftSeat>();
+
+        // 2 filas primera clase: A,B,C,D
+        for (int fila = 3; fila <= 4; fila++)
+            foreach (char col in new[] { 'A', 'B', 'C', 'D' })
+            {
+                var s = AircraftSeat.Crear(avionId, clasePrimera, fila, col,
+                    col == 'A' || col == 'D', col == 'B' || col == 'C');
+                await repo.SaveAsync(s);
+                lista.Add(s);
+            }
 
         // 2 filas ejecutiva: A,B,C
         for (int fila = 1; fila <= 2; fila++)

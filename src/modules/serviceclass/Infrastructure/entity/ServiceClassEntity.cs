@@ -10,6 +10,7 @@ public class ServiceClassEntity
     public string Nombre { get; set; } = null!;
     public string Codigo { get; set; } = null!;
     public string? Descripcion { get; set; }
+    public decimal? PrecioBase { get; set; }
 
     public ICollection<AircraftSeatEntity> Asientos { get; set; } = new List<AircraftSeatEntity>();
     public ICollection<FareEntity> Tarifas { get; set; } = new List<FareEntity>();

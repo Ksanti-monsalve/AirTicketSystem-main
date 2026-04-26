@@ -516,6 +516,7 @@ public static class DependencyInjection
         services.AddScoped<GetPassengersByBookingUseCase>();
         services.AddScoped<AssignSeatUseCase>();
         services.AddScoped<ChangeSeatUseCase>();
+        services.AddScoped<SelectSeatForPassengerUseCase>();
         services.AddScoped<AirTicketSystem.modules.bookingpassenger.Application.UseCases.ReleaseSeatUseCase>();
 
         // CheckIn
@@ -588,6 +589,11 @@ public static class DependencyInjection
 
         // SeatAvailability
         services.AddScoped<GetAvailableSeatsByFlightUseCase>();
+        services.AddScoped<GetAvailableClassesByFlightUseCase>();
+        services.AddScoped<GetAvailableSeatDetailsByFlightAndClassUseCase>();
+        services.AddScoped<GetSeatDetailsByFlightUseCase>();
+        services.AddScoped<GetSeatDetailsByBookingUseCase>();
+        services.AddScoped<GetSeatStatsByFlightUseCase>();
         services.AddScoped<ReserveSeatUseCase>();
         services.AddScoped<AirTicketSystem.modules.seatavailability.Application.UseCases.ReleaseSeatUseCase>();
         services.AddScoped<BlockSeatUseCase>();

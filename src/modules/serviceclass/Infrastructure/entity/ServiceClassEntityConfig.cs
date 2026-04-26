@@ -16,6 +16,8 @@ public class ServiceClassEntityConfig : IEntityTypeConfiguration<ServiceClassEnt
         builder.Property(s => s.Codigo).HasColumnName("codigo").HasMaxLength(3)
             .IsRequired().IsFixedLength();
         builder.Property(s => s.Descripcion).HasColumnName("descripcion").HasMaxLength(200);
+        builder.Property(s => s.PrecioBase).HasColumnName("precio_base")
+            .HasColumnType("decimal(10,2)");
 
         builder.HasIndex(s => s.Nombre).IsUnique();
         builder.HasIndex(s => s.Codigo).IsUnique();

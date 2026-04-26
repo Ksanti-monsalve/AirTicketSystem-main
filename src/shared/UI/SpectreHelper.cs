@@ -113,7 +113,16 @@ public static class SpectreHelper
     {
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[grey]  {Esc(mensaje)}[/]");
-        Console.ReadLine();
+        try
+        {
+            if (!Console.IsInputRedirected)
+                Console.ReadKey(intercept: true);
+        }
+        catch
+        {
+            // Fallback en ambientes donde ReadKey no está disponible
+            _ = Console.ReadLine();
+        }
     }
 
     // ── Menú de selección ─────────────────────────────────────────────
@@ -121,23 +130,69 @@ public static class SpectreHelper
     public static T SeleccionarOpcion<T>(string titulo, IEnumerable<T> opciones,
         Func<T, string> etiqueta) where T : notnull
     {
-        return AnsiConsole.Prompt(
-            new SelectionPrompt<T>()
-                .Title($"  [bold]{Esc(titulo)}[/]")
-                .PageSize(12)
-                .AddChoices(opciones)
-                .UseConverter(x => Esc(etiqueta(x))));
+        // Selector normal (flechas + Enter). Si falla en el terminal,
+        // cae a un fallback numérico.
+        var arr = opciones.ToArray();
+        if (arr.Length == 0)
+            throw new InvalidOperationException("No hay opciones para seleccionar.");
+
+        try
+        {
+            return AnsiConsole.Prompt(
+                new SelectionPrompt<T>()
+                    .Title($"  [bold]{Esc(titulo)}[/]")
+                    .PageSize(12)
+                    .AddChoices(arr)
+                    .UseConverter(x => Esc(etiqueta(x))));
+        }
+        catch
+        {
+            AnsiConsole.MarkupLine($"  [bold]{Esc(titulo)}[/]  [grey](fallback numérico)[/]");
+            for (var i = 0; i < arr.Length; i++)
+                AnsiConsole.MarkupLine($"   [deepskyblue1]{i + 1}.[/] {Esc(etiqueta(arr[i]))}");
+
+            var idx = AnsiConsole.Prompt(
+                new TextPrompt<int>("  [white]Ingrese el número de la opción:[/]")
+                    .ValidationErrorMessage("[red]Ingrese un número válido.[/]")
+                    .Validate(n => n >= 1 && n <= arr.Length
+                        ? ValidationResult.Success()
+                        : ValidationResult.Error($"Debe estar entre 1 y {arr.Length}")));
+
+            return arr[idx - 1];
+        }
     }
 
     public static string SeleccionarOpcionTexto(string titulo,
         IEnumerable<string> opciones)
     {
-        return AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title($"  [bold]{Esc(titulo)}[/]")
-                .PageSize(12)
-                .AddChoices(opciones)
-                .UseConverter(Esc));
+        var arr = opciones.ToArray();
+        if (arr.Length == 0)
+            throw new InvalidOperationException("No hay opciones para seleccionar.");
+
+        try
+        {
+            return AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"  [bold]{Esc(titulo)}[/]")
+                    .PageSize(12)
+                    .AddChoices(arr)
+                    .UseConverter(Esc));
+        }
+        catch
+        {
+            AnsiConsole.MarkupLine($"  [bold]{Esc(titulo)}[/]  [grey](fallback numérico)[/]");
+            for (var i = 0; i < arr.Length; i++)
+                AnsiConsole.MarkupLine($"   [deepskyblue1]{i + 1}.[/] {Esc(arr[i])}");
+
+            var idx = AnsiConsole.Prompt(
+                new TextPrompt<int>("  [white]Ingrese el número de la opción:[/]")
+                    .ValidationErrorMessage("[red]Ingrese un número válido.[/]")
+                    .Validate(n => n >= 1 && n <= arr.Length
+                        ? ValidationResult.Success()
+                        : ValidationResult.Error($"Debe estar entre 1 y {arr.Length}")));
+
+            return arr[idx - 1];
+        }
     }
 
     // ── Tablas ────────────────────────────────────────────────────────

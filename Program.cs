@@ -46,7 +46,8 @@ catch (Exception ex)
     Console.WriteLine($"  ✗ Error de base de datos: {ex.Message}");
     Console.ResetColor();
     Console.WriteLine("  Presione cualquier tecla para salir...");
-    Console.ReadKey(true);
+    if (!Console.IsInputRedirected)
+        Console.ReadKey(true);
     return;
 }
 

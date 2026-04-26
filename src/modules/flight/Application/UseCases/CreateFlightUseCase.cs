@@ -92,7 +92,11 @@ public sealed class CreateFlightUseCase
         var asientos = await _seatRepository.FindByAvionAsync(avionId);
 
         var disponibilidades = asientos
-            .Select(a => SeatAvailability.Crear(flight.Id, a.Id))
+            .Select(a => SeatAvailability.Crear(
+                vueloId: flight.Id,
+                asientoId: a.Id,
+                numeroAsiento: a.CodigoAsiento.Valor,
+                claseVueloId: a.ClaseServicioId))
             .ToList();
 
         await _availabilityRepository.SaveAllAsync(disponibilidades);

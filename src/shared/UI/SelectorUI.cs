@@ -95,7 +95,36 @@ public static class SelectorUI
             SpectreHelper.EsperarTecla();
             return null;
         }
-        return SpectreHelper.SeleccionarOpcion(titulo, lista, etiqueta);
+
+        // Algunos entornos/terminales de Windows pueden no capturar bien Enter
+        // con SelectionPrompt. En ese caso, hacemos un fallback a selección por número.
+        try
+        {
+            return SpectreHelper.SeleccionarOpcion(titulo, lista, etiqueta);
+        }
+        catch (Exception)
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"  {titulo} (fallback numérico)");
+            Console.ResetColor();
+
+            var arr = lista.ToArray();
+            for (var i = 0; i < arr.Length; i++)
+                Console.WriteLine($"   {i + 1}. {etiqueta(arr[i])}");
+
+            Console.WriteLine();
+            Console.Write("  Ingrese el número de la opción: ");
+            var raw = Console.ReadLine();
+            if (!int.TryParse(raw, out var idx) || idx < 1 || idx > arr.Length)
+            {
+                SpectreHelper.MostrarError("Selección inválida.");
+                SpectreHelper.EsperarTecla();
+                return null;
+            }
+
+            return arr[idx - 1];
+        }
     }
 
     // ── CATÁLOGOS ────────────────────────────────────────────────────────────

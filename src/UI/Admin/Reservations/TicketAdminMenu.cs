@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using AirTicketSystem.shared.UI;
 using AirTicketSystem.shared.helpers;
 using AirTicketSystem.modules.ticket.Application.UseCases;
+using AirTicketSystem.modules.bookingpassenger.Domain.Repositories;
+using AirTicketSystem.modules.seatavailability.Domain.Repositories;
 
 namespace AirTicketSystem.UI.Admin.Reservations;
 
@@ -67,7 +69,30 @@ public sealed class TicketAdminMenu
         {
             await using var scope = _provider.CreateAsyncScope();
             var t = await scope.ServiceProvider.GetRequiredService<EmitTicketUseCase>().ExecuteAsync(pasajeroReservaId);
-            SpectreHelper.MostrarExito($"Tiquete emitido. Código: {t.CodigoTiquete.Valor} (ID {t.Id}).");
+
+            // Mostrar número de asiento y clase (si hay asiento asignado)
+            var paxRepo = scope.ServiceProvider.GetRequiredService<IBookingPassengerRepository>();
+            var saRepo  = scope.ServiceProvider.GetRequiredService<ISeatAvailabilityRepository>();
+            var pax     = await paxRepo.FindByIdAsync(pasajeroReservaId);
+
+            if (pax?.AsientoId is int dispId)
+            {
+                var detalle = await saRepo.FindDetalleByDisponibilidadIdAsync(dispId);
+                SpectreHelper.MostrarExito(
+                    $"Tiquete emitido.\n" +
+                    $"  Código  : {t.CodigoTiquete.Valor}\n" +
+                    $"  Asiento : {detalle?.NumeroAsiento ?? "-"}\n" +
+                    $"  Clase   : {detalle?.ClaseServicioNombre ?? "-"}\n" +
+                    $"  Estado  : {t.Estado.Valor}\n" +
+                    $"  Emitido : {t.FechaEmision.Valor:yyyy-MM-dd HH:mm}");
+                return;
+            }
+
+            SpectreHelper.MostrarExito(
+                $"Tiquete emitido.\n" +
+                $"  Código  : {t.CodigoTiquete.Valor}\n" +
+                $"  Estado  : {t.Estado.Valor}\n" +
+                $"  Emitido : {t.FechaEmision.Valor:yyyy-MM-dd HH:mm}");
         });
         SpectreHelper.EsperarTecla();
     }

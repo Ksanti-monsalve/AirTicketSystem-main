@@ -4,6 +4,7 @@ using AirTicketSystem.shared.context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AirTicketSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260426030305_AgregarReservaYTiqueteEnDisponibilidadAsientos")]
+    partial class AgregarReservaYTiqueteEnDisponibilidadAsientos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2071,10 +2074,6 @@ namespace AirTicketSystem.Migrations
                         .HasColumnType("int")
                         .HasColumnName("asiento_id");
 
-                    b.Property<int>("ClaseVueloId")
-                        .HasColumnType("int")
-                        .HasColumnName("clase_vuelo_id");
-
                     b.Property<string>("Estado")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2083,19 +2082,19 @@ namespace AirTicketSystem.Migrations
                         .HasDefaultValue("DISPONIBLE")
                         .HasColumnName("estado");
 
-                    b.Property<string>("NumeroAsiento")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("varchar(5)")
-                        .HasColumnName("numero_asiento");
-
                     b.Property<int?>("ReservaId")
                         .HasColumnType("int")
                         .HasColumnName("reserva_id");
 
+                    b.Property<int?>("ReservaId1")
+                        .HasColumnType("int");
+
                     b.Property<int?>("TiqueteId")
                         .HasColumnType("int")
                         .HasColumnName("tiquete_id");
+
+                    b.Property<int?>("TiqueteId1")
+                        .HasColumnType("int");
 
                     b.Property<int>("VueloId")
                         .HasColumnType("int")
@@ -2107,12 +2106,13 @@ namespace AirTicketSystem.Migrations
 
                     b.HasIndex("ReservaId");
 
+                    b.HasIndex("ReservaId1");
+
                     b.HasIndex("TiqueteId");
 
-                    b.HasIndex("VueloId", "AsientoId")
-                        .IsUnique();
+                    b.HasIndex("TiqueteId1");
 
-                    b.HasIndex("VueloId", "NumeroAsiento")
+                    b.HasIndex("VueloId", "AsientoId")
                         .IsUnique();
 
                     b.ToTable("disponibilidad_asientos", null, t =>
@@ -3141,15 +3141,23 @@ namespace AirTicketSystem.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("AirTicketSystem.modules.booking.Infrastructure.entity.BookingEntity", "Reserva")
+                    b.HasOne("AirTicketSystem.modules.booking.Infrastructure.entity.BookingEntity", null)
                         .WithMany()
                         .HasForeignKey("ReservaId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("AirTicketSystem.modules.ticket.Infrastructure.entity.TicketEntity", "Tiquete")
+                    b.HasOne("AirTicketSystem.modules.booking.Infrastructure.entity.BookingEntity", "Reserva")
+                        .WithMany()
+                        .HasForeignKey("ReservaId1");
+
+                    b.HasOne("AirTicketSystem.modules.ticket.Infrastructure.entity.TicketEntity", null)
                         .WithMany()
                         .HasForeignKey("TiqueteId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AirTicketSystem.modules.ticket.Infrastructure.entity.TicketEntity", "Tiquete")
+                        .WithMany()
+                        .HasForeignKey("TiqueteId1");
 
                     b.HasOne("AirTicketSystem.modules.flight.Infrastructure.entity.FlightEntity", "Vuelo")
                         .WithMany("DisponibilidadAsientos")

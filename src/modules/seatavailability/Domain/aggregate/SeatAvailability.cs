@@ -8,11 +8,17 @@ public sealed class SeatAvailability
     public int Id { get; private set; }
     public int VueloId { get; private set; }
     public int AsientoId { get; private set; }
+    public string NumeroAsiento { get; private set; } = null!;
+    public int ClaseVueloId { get; private set; }
     public EstadoSeatAvailability Estado { get; private set; } = null!;
 
     private SeatAvailability() { }
 
-    public static SeatAvailability Crear(int vueloId, int asientoId)
+    public static SeatAvailability Crear(
+        int vueloId,
+        int asientoId,
+        string numeroAsiento,
+        int claseVueloId)
     {
         if (vueloId <= 0)
             throw new ArgumentException("El vuelo es obligatorio.");
@@ -20,22 +26,37 @@ public sealed class SeatAvailability
         if (asientoId <= 0)
             throw new ArgumentException("El asiento es obligatorio.");
 
+        if (string.IsNullOrWhiteSpace(numeroAsiento))
+            throw new ArgumentException("El número de asiento es obligatorio.");
+
+        if (claseVueloId <= 0)
+            throw new ArgumentException("La clase de vuelo es obligatoria.");
+
         return new SeatAvailability
         {
             VueloId   = vueloId,
             AsientoId = asientoId,
+            NumeroAsiento = numeroAsiento.Trim().ToUpperInvariant(),
+            ClaseVueloId = claseVueloId,
             Estado    = EstadoSeatAvailability.Disponible()
         };
     }
 
     public static SeatAvailability Reconstituir(
-        int id, int vueloId, int asientoId, string estado)
+        int id,
+        int vueloId,
+        int asientoId,
+        string numeroAsiento,
+        int claseVueloId,
+        string estado)
     {
         return new SeatAvailability
         {
             Id        = id,
             VueloId   = vueloId,
             AsientoId = asientoId,
+            NumeroAsiento = numeroAsiento.Trim().ToUpperInvariant(),
+            ClaseVueloId = claseVueloId,
             Estado    = EstadoSeatAvailability.Crear(estado)
         };
     }
@@ -93,5 +114,5 @@ public sealed class SeatAvailability
     public bool EstaDisponible => Estado.Valor == "DISPONIBLE";
 
     public override string ToString()
-        => $"Asiento #{AsientoId} — Vuelo #{VueloId} | {Estado}";
+        => $"{NumeroAsiento} — Vuelo #{VueloId} | {Estado}";
 }
