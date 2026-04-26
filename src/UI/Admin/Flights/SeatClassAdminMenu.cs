@@ -59,6 +59,17 @@ public sealed class SeatClassAdminMenu
         }
     }
 
+    // EXAMEN (punto 6): diferenciar visualmente estados en consola
+    private static string StatusFmt(string status)
+        => status switch
+        {
+            "Available" => "[bold green]Available[/]",
+            "Reserved"  => "[bold yellow]Reserved[/]",
+            "Occupied"  => "[bold red]Occupied[/]",
+            "Blocked"   => "[grey]Blocked[/]",
+            _           => status
+        };
+
     /// <summary>
     /// Reutiliza el caso de uso existente: al crear vuelo ya genera automáticamente la disponibilidad de asientos.
     /// </summary>
@@ -98,7 +109,7 @@ public sealed class SeatClassAdminMenu
                 SpectreHelper.MostrarSubtitulo($"Clase: {grupo.Key.FlightClassName} (ID {grupo.Key.FlightClassId})");
                 var tabla = SpectreHelper.CrearTabla("SeatID", "SeatNumber", "Status");
                 foreach (var s in grupo.OrderBy(x => x.SeatNumber))
-                    SpectreHelper.AgregarFila(tabla, s.Id.ToString(), s.SeatNumber, s.Status);
+                    SpectreHelper.AgregarFila(tabla, s.Id.ToString(), s.SeatNumber, StatusFmt(s.Status));
                 SpectreHelper.MostrarTabla(tabla);
             }
             SpectreHelper.MostrarInfo($"Total asientos: {asientos.Count}");
@@ -129,7 +140,7 @@ public sealed class SeatClassAdminMenu
                     s.Id.ToString(),
                     s.SeatNumber,
                     s.FlightClassName,
-                    s.Status);
+                    StatusFmt(s.Status));
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.MostrarInfo($"Total ocupados: {ocupados.Count}");
             SpectreHelper.EsperarTecla();

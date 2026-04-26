@@ -73,6 +73,17 @@ public sealed class SeatSelectionClientMenu
         }
     }
 
+    // EXAMEN (punto 6): diferenciar visualmente estados en consola
+    private static string StatusFmt(string status)
+        => status switch
+        {
+            "Available" => "[bold green]Available[/]",
+            "Reserved"  => "[bold yellow]Reserved[/]",
+            "Occupied"  => "[bold red]Occupied[/]",
+            "Blocked"   => "[grey]Blocked[/]",
+            _           => status
+        };
+
     private Task CrearReservaAsync()
     {
         SpectreHelper.MostrarInfo("Se abrirá el módulo actual de búsqueda de vuelos y creación de reserva.");
@@ -234,7 +245,7 @@ public sealed class SeatSelectionClientMenu
                 SpectreHelper.AgregarFila(tabla,
                     s.SeatNumber,
                     s.FlightClassName,
-                    s.Status);
+                    StatusFmt(s.Status));
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.MostrarInfo($"Total disponibles: {asientos.Count}");
             SpectreHelper.EsperarTecla();

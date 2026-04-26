@@ -66,24 +66,38 @@ public sealed class SeatRepository : ISeatRepository
 
     public async Task<IReadOnlyCollection<SeatClassStats>> FindStatsByFlightAsync(int flightId)
     {
-        var items = await _context.Seats
+        // Importante: evitar OrderBy sobre un tipo proyectado (record) porque EF puede no traducirlo.
+        // Proyectamos a anónimo (SQL traducible), ordenamos y luego mapeamos a SeatClassStats en memoria.
+        var rows = await _context.Seats
             .AsNoTracking()
-            .Include(s => s.FlightClass)
             .Where(s => s.FlightId == flightId)
-            .GroupBy(s => new { s.FlightClassId, s.FlightClass.Name, s.FlightClass.Code })
-            .Select(g => new SeatClassStats(
+            .GroupBy(s => new { s.FlightClassId, Name = s.FlightClass.Name, Code = s.FlightClass.Code })
+            .Select(g => new
+            {
                 g.Key.FlightClassId,
                 g.Key.Name,
                 g.Key.Code,
-                g.Count(),
-                g.Count(x => x.Status == "Available"),
-                g.Count(x => x.Status == "Reserved"),
-                g.Count(x => x.Status == "Occupied"),
-                g.Count(x => x.Status == "Blocked")))
-            .OrderBy(x => x.FlightClassName)
+                Total     = g.Count(),
+                Available = g.Count(x => x.Status == "Available"),
+                Reserved  = g.Count(x => x.Status == "Reserved"),
+                Occupied  = g.Count(x => x.Status == "Occupied"),
+                Blocked   = g.Count(x => x.Status == "Blocked")
+            })
+            .OrderBy(x => x.Name)
             .ToListAsync();
 
-        return items.AsReadOnly();
+        return rows
+            .Select(x => new SeatClassStats(
+                x.FlightClassId,
+                x.Name,
+                x.Code,
+                x.Total,
+                x.Available,
+                x.Reserved,
+                x.Occupied,
+                x.Blocked))
+            .ToList()
+            .AsReadOnly();
     }
 
     public async Task<IReadOnlyCollection<SeatDetail>> FindDetailsByBookingAsync(int bookingId)
