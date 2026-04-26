@@ -4,6 +4,7 @@ using AirTicketSystem.shared.UI;
 using AirTicketSystem.shared.helpers;
 using AirTicketSystem.modules.bookingpassenger.Application.UseCases;
 using AirTicketSystem.modules.booking.Application.UseCases;
+using AirTicketSystem.modules.seat.Application.UseCases;
 
 namespace AirTicketSystem.UI.Admin.Reservations;
 
@@ -101,14 +102,55 @@ public sealed class PassengerMenu
 
     private async Task CambiarAsientoAsync()
     {
-        var pasajeroReservaId = SpectreHelper.PedirEntero("ID del pasajero-reserva");
-        var nuevoAsientoId    = SpectreHelper.PedirEntero("ID del nuevo asiento");
+        var reservaId = SpectreHelper.PedirEntero("ID de la reserva");
         await ConsoleErrorHandler.ExecuteAsync(async () =>
         {
             await using var scope = _provider.CreateAsyncScope();
-            var p = await scope.ServiceProvider.GetRequiredService<ChangeSeatUseCase>()
-                .ExecuteAsync(pasajeroReservaId, nuevoAsientoId);
-            SpectreHelper.MostrarExito($"Asiento cambiado al {p.AsientoId}.");
+            var sp = scope.ServiceProvider;
+            var pasajeros = await sp.GetRequiredService<GetPassengersByBookingUseCase>()
+                .ExecuteAsync(reservaId);
+            var conAsiento = pasajeros.Where(p => p.AsientoId.HasValue).ToList();
+            if (conAsiento.Count == 0)
+            {
+                SpectreHelper.MostrarInfo(
+                    "Ningún pasajero tiene asiento asignado. Use «Asignar asiento» o el flujo de selección en el portal cliente.");
+                return;
+            }
+
+            var pasajero = SpectreHelper.SeleccionarOpcion(
+                "Pasajero a reubicar (debe tener asiento en reserva RESERVADA)",
+                conAsiento,
+                p => $"  #{p.Id}  persona {p.PersonaId}  asiento (disp.) {p.AsientoId}");
+
+            var booking = await sp.GetRequiredService<GetBookingByIdUseCase>().ExecuteAsync(reservaId)
+                ?? throw new KeyNotFoundException("Reserva no encontrada.");
+            var vueloId = booking.VueloId;
+
+            var clases = await sp.GetRequiredService<GetAvailableFlightClassesByFlightUseCase>()
+                .ExecuteAsync(vueloId);
+            if (clases.Count == 0)
+                throw new InvalidOperationException("No hay clases con asientos libres en ese vuelo.");
+
+            var claseSel = SpectreHelper.SeleccionarOpcion(
+                "Nueva clase de vuelo",
+                clases.ToList(),
+                c => $"  [{c.FlightClassCode}] {c.FlightClassName}  (disponibles: {c.Available})");
+
+            var asientos = await sp.GetRequiredService<GetAvailableSeatsByFlightAndClassUseCase>()
+                .ExecuteAsync(vueloId, claseSel.FlightClassId);
+            if (asientos.Count == 0)
+                throw new InvalidOperationException("No hay asientos libres en esa clase.");
+
+            var asientoSel = SpectreHelper.SeleccionarOpcion(
+                "Nuevo asiento (n.º de fila y columna)",
+                asientos.ToList(),
+                s => $"  {s.SeatNumber}  —  {s.FlightClassName}");
+
+            var p = await sp.GetRequiredService<ChangeSeatUseCase>()
+                .ExecuteAsync(pasajero.Id, claseSel.FlightClassId, asientoSel.SeatNumber);
+
+            SpectreHelper.MostrarExito(
+                $"Asiento actualizado. Pasajero {p.Id}, id disponibilidad {p.AsientoId?.ToString() ?? "—"}.");
         });
         SpectreHelper.EsperarTecla();
     }

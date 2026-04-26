@@ -2,13 +2,16 @@ using Microsoft.Extensions.DependencyInjection;
 using AirTicketSystem.shared.UI;
 using AirTicketSystem.shared.helpers;
 using AirTicketSystem.modules.flight.Application.UseCases;
+using AirTicketSystem.modules.flight.Domain.Repositories;
 using AirTicketSystem.modules.seat.Application.UseCases;
+using AirTicketSystem.UI.Admin.Reservations;
 
 namespace AirTicketSystem.UI.Admin.Flights;
 
 /// <summary>
-/// Menú solicitado por el examen para separar funciones de ADMIN
-/// relacionadas con clases de vuelo y selección/estado de asientos por vuelo.
+/// Enunciado examen (§5 y §6): opciones y textos alineados a
+/// «Ver asientos por vuelo», «Seleccionar asiento en reserva», «Consultar disponibilidad por clase»,
+/// «Ver asientos ocupados», «Cambiar asiento».
 /// </summary>
 public sealed class SeatClassAdminMenu
 {
@@ -20,37 +23,46 @@ public sealed class SeatClassAdminMenu
     {
         while (true)
         {
-            SpectreHelper.MostrarTitulo("ADMIN — Selección de Asientos y Clases de Vuelo");
+            SpectreHelper.MostrarTitulo("ADMIN — Selección de asientos y clases de vuelo (examen)");
 
+            // Orden y redacción cercanos al enunciado (sección 5).
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
-                    "1. Crear vuelo",
-                    "2. Ver asientos por vuelo",
-                    "3. Ver asientos ocupados",
-                    "4. Ver disponibilidad por clase",
-                    "5. Ver porcentaje de ocupación",
-                    "6. Consultar reservas",
+                    "1. Ver asientos por vuelo",
+                    "2. Seleccionar asiento en reserva",
+                    "3. Consultar disponibilidad por clase",
+                    "4. Ver asientos ocupados",
+                    "5. Cambiar asiento",
+                    "6. Ver porcentaje de ocupación",
+                    "7. Crear vuelo",
+                    "8. Consultar reservas",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
-                case "1. Crear vuelo":
-                    await CrearVueloAsync();
-                    break;
-                case "2. Ver asientos por vuelo":
+                case "1. Ver asientos por vuelo":
                     await VerAsientosPorVueloAsync();
                     break;
-                case "3. Ver asientos ocupados":
-                    await VerAsientosOcupadosAsync();
+                case "2. Seleccionar asiento en reserva":
+                    await AvisoSeleccionAsientoReservaAsync();
                     break;
-                case "4. Ver disponibilidad por clase":
+                case "3. Consultar disponibilidad por clase":
                     await VerDisponibilidadPorClaseAsync();
                     break;
-                case "5. Ver porcentaje de ocupación":
+                case "4. Ver asientos ocupados":
+                    await VerAsientosOcupadosAsync();
+                    break;
+                case "5. Cambiar asiento":
+                    await new PassengerMenu(_provider).MostrarAsync();
+                    break;
+                case "6. Ver porcentaje de ocupación":
                     await VerPorcentajeOcupacionAsync();
                     break;
-                case "6. Consultar reservas":
+                case "7. Crear vuelo":
+                    await CrearVueloAsync();
+                    break;
+                case "8. Consultar reservas":
                     await ConsultarReservasAsync();
                     break;
                 case "Volver":
@@ -59,37 +71,64 @@ public sealed class SeatClassAdminMenu
         }
     }
 
-    // EXAMEN (punto 6): diferenciar visualmente estados en consola
-    private static string StatusFmt(string status)
-        => status switch
-        {
-            "Available" => "[bold green]Available[/]",
-            "Reserved"  => "[bold yellow]Reserved[/]",
-            "Occupied"  => "[bold red]Occupied[/]",
-            "Blocked"   => "[grey]Blocked[/]",
-            _           => status
-        };
+    private static Task AvisoSeleccionAsientoReservaAsync()
+    {
+        SpectreHelper.MostrarInfo(
+            "Flujo del examen (solicitar reserva, vuelo, clases, asiento, validaciones y RESERVADO): " +
+            "use el **Portal de clientes** → **Selección de asientos y clases (examen)** → " +
+            "«Seleccionar asiento en reserva».");
+        SpectreHelper.MostrarInfo(
+            "Como administrador puede asignar por ID de disponibilidad en: **Reservas** → **Pasajeros**.");
+        SpectreHelper.EsperarTecla();
+        return Task.CompletedTask;
+    }
 
-    /// <summary>
-    /// Reutiliza el caso de uso existente: al crear vuelo ya genera automáticamente la disponibilidad de asientos.
-    /// </summary>
+    private static async Task<int> ResolverVueloIdExamenAsync(
+        IServiceProvider sp, string raw)
+    {
+        var trimmed = raw.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            throw new ArgumentException("Indique un ID o número de vuelo.");
+
+        if (int.TryParse(trimmed, out var id) && id > 0)
+        {
+            var flight = await sp.GetRequiredService<IFlightRepository>().FindByIdAsync(id)
+                ?? throw new KeyNotFoundException($"No existe vuelo con ID {id}.");
+            return flight.Id;
+        }
+
+        var num = trimmed.ToUpperInvariant();
+        var list = (await sp.GetRequiredService<IFlightRepository>().FindProgramadosAsync())
+            .Where(f => f.NumeroVuelo.Valor == num)
+            .ToList();
+        if (list.Count == 0)
+            throw new KeyNotFoundException(
+                $"No se encontró un vuelo programado con número «{num}».");
+
+        if (list.Count > 1)
+        {
+            SpectreHelper.MostrarAdvertencia(
+                "Hay varias fechas con ese número de vuelo; se toma el primero de la lista programada.");
+        }
+
+        return list[0].Id;
+    }
+
     private async Task CrearVueloAsync()
     {
-        SpectreHelper.MostrarInfo("Se abrirá el módulo de creación de vuelos (incluye generación automática de asientos).");
+        SpectreHelper.MostrarInfo("Al guardar un vuelo se genera el mapa de asientos (enunciado §4).");
         SpectreHelper.EsperarTecla();
         await new FlightMenu(_provider).MostrarAsync();
     }
 
-    /// <summary>
-    /// FASE 6: listado de asientos con número, clase y estado.
-    /// ADMIN ve todos (DISPONIBLE/RESERVADO/OCUPADO/BLOQUEADO).
-    /// </summary>
+    /// <summary>§6: número, clase, estado; visualmente differenciados (Disponible/Reservado/Ocupado).</summary>
     private async Task VerAsientosPorVueloAsync()
     {
-        var vueloId = SpectreHelper.PedirEntero("ID del vuelo");
+        var raw = SpectreHelper.PedirTexto("Vuelo: ID numérico o número (p. ej. HK4800)");
         await ConsoleErrorHandler.ExecuteAsync(async () =>
         {
             await using var scope = _provider.CreateAsyncScope();
+            var vueloId = await ResolverVueloIdExamenAsync(scope.ServiceProvider, raw);
             var asientos = await scope.ServiceProvider
                 .GetRequiredService<GetSeatDetailsByFlightUseCase>()
                 .ExecuteAsync(vueloId);
@@ -101,15 +140,20 @@ public sealed class SeatClassAdminMenu
                 return;
             }
 
-            // EXAMEN (punto 6): agrupar asientos por clase
             foreach (var grupo in asientos
                          .GroupBy(s => new { s.FlightClassId, s.FlightClassName })
                          .OrderBy(g => g.Key.FlightClassName))
             {
-                SpectreHelper.MostrarSubtitulo($"Clase: {grupo.Key.FlightClassName} (ID {grupo.Key.FlightClassId})");
-                var tabla = SpectreHelper.CrearTabla("SeatID", "SeatNumber", "Status");
+                SpectreHelper.MostrarSubtitulo(
+                    $"Clase: {grupo.Key.FlightClassName} (id {grupo.Key.FlightClassId})");
+                var tabla = SpectreHelper.CrearTabla("ID asiento", "N.º asiento", "Estado");
                 foreach (var s in grupo.OrderBy(x => x.SeatNumber))
-                    SpectreHelper.AgregarFila(tabla, s.Id.ToString(), s.SeatNumber, StatusFmt(s.Status));
+                {
+                    SpectreHelper.AgregarFila(tabla,
+                        s.Id.ToString(),
+                        s.SeatNumber,
+                        SpectreHelper.FormatearEstadoAsientoExamen(s.Status));
+                }
                 SpectreHelper.MostrarTabla(tabla);
             }
             SpectreHelper.MostrarInfo($"Total asientos: {asientos.Count}");
@@ -119,28 +163,29 @@ public sealed class SeatClassAdminMenu
 
     private async Task VerAsientosOcupadosAsync()
     {
-        var vueloId = SpectreHelper.PedirEntero("ID del vuelo");
+        var raw = SpectreHelper.PedirTexto("Vuelo: ID numérico o número (p. ej. HK4800)");
         await ConsoleErrorHandler.ExecuteAsync(async () =>
         {
             await using var scope = _provider.CreateAsyncScope();
+            var vueloId = await ResolverVueloIdExamenAsync(scope.ServiceProvider, raw);
             var ocupados = await scope.ServiceProvider
                 .GetRequiredService<GetSeatDetailsByFlightUseCase>()
                 .ExecuteAsync(vueloId, status: "Occupied");
 
             if (ocupados.Count == 0)
             {
-                SpectreHelper.MostrarInfo("No hay asientos OCUPADOS en este vuelo.");
+                SpectreHelper.MostrarInfo("No hay asientos en estado Ocupado en este vuelo.");
                 SpectreHelper.EsperarTecla();
                 return;
             }
 
-            var tabla = SpectreHelper.CrearTabla("SeatID", "N° asiento", "Clase", "Estado");
+            var tabla = SpectreHelper.CrearTabla("ID asiento", "N.º asiento", "Clase", "Estado");
             foreach (var s in ocupados)
                 SpectreHelper.AgregarFila(tabla,
                     s.Id.ToString(),
                     s.SeatNumber,
                     s.FlightClassName,
-                    StatusFmt(s.Status));
+                    SpectreHelper.FormatearEstadoAsientoExamen(s.Status));
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.MostrarInfo($"Total ocupados: {ocupados.Count}");
             SpectreHelper.EsperarTecla();
@@ -149,10 +194,11 @@ public sealed class SeatClassAdminMenu
 
     private Task VerDisponibilidadPorClaseAsync()
     {
-        var vueloId = SpectreHelper.PedirEntero("ID del vuelo");
+        var raw = SpectreHelper.PedirTexto("Vuelo: ID numérico o número (p. ej. HK4800)");
         return ConsoleErrorHandler.ExecuteAsync(async () =>
         {
             await using var scope = _provider.CreateAsyncScope();
+            var vueloId = await ResolverVueloIdExamenAsync(scope.ServiceProvider, raw);
             var stats = await scope.ServiceProvider
                 .GetRequiredService<GetSeatStatsByFlightUseCase>()
                 .ExecuteAsync(vueloId);
@@ -165,7 +211,7 @@ public sealed class SeatClassAdminMenu
             }
 
             var tabla = SpectreHelper.CrearTabla(
-                "ClaseID", "Código", "Nombre",
+                "Clase (id)", "Código", "Nombre",
                 "Total", "Disponibles", "Reservados", "Ocupados", "Bloqueados");
 
             foreach (var s in stats)
@@ -186,10 +232,11 @@ public sealed class SeatClassAdminMenu
 
     private Task VerPorcentajeOcupacionAsync()
     {
-        var vueloId = SpectreHelper.PedirEntero("ID del vuelo");
+        var raw = SpectreHelper.PedirTexto("Vuelo: ID numérico o número (p. ej. HK4800)");
         return ConsoleErrorHandler.ExecuteAsync(async () =>
         {
             await using var scope = _provider.CreateAsyncScope();
+            var vueloId = await ResolverVueloIdExamenAsync(scope.ServiceProvider, raw);
             var stats = await scope.ServiceProvider
                 .GetRequiredService<GetSeatStatsByFlightUseCase>()
                 .ExecuteAsync(vueloId);
@@ -216,18 +263,17 @@ public sealed class SeatClassAdminMenu
                     $"{pct:F2}%");
             }
             SpectreHelper.MostrarTabla(tabla);
-            SpectreHelper.MostrarInfo($"Ocupación total vuelo {vueloId}: {ocupados}/{total} ({porcentaje:F2}%)");
+            SpectreHelper.MostrarInfo(
+                $"Ocupación total vuelo {vueloId}: {ocupados}/{total} ({porcentaje:F2}%)");
             SpectreHelper.EsperarTecla();
         });
     }
 
     private Task ConsultarReservasAsync()
     {
-        SpectreHelper.MostrarInfo("Se abrirá el módulo de reservas (admin).");
+        SpectreHelper.MostrarInfo("Módulo de reservas (admin).");
         SpectreHelper.EsperarTecla();
-        // Reutiliza el menú existente de reservas para consulta.
-        return new AirTicketSystem.UI.Admin.Reservations.BookingMenu(_provider, _provider.GetRequiredService<SessionContext>())
+        return new BookingMenu(_provider, _provider.GetRequiredService<SessionContext>())
             .MostrarAsync();
     }
 }
-

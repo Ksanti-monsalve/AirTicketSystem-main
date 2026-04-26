@@ -21,7 +21,7 @@ public sealed class FlightModuleMenu
                     "4.2 Tripulación",
                     "4.3 Disponibilidad de asientos",
                     "4.4 Selección de asientos y clases (EXAMEN)",
-                    "4.4 Historial de vuelos",
+                    "4.5 Historial de vuelos",
                     "Volver"
                 ]);
 
@@ -31,7 +31,7 @@ public sealed class FlightModuleMenu
                 case "4.2 Tripulación":                   await new FlightCrewMenu(_provider).MostrarAsync();   break;
                 case "4.3 Disponibilidad de asientos":    await new SeatAvailabilityMenu(_provider).MostrarAsync(); break;
                 case "4.4 Selección de asientos y clases (EXAMEN)": await new SeatClassAdminMenu(_provider).MostrarAsync(); break;
-                case "4.4 Historial de vuelos":           await new FlightHistoryMenu(_provider).MostrarAsync(); break;
+                case "4.5 Historial de vuelos":           await new FlightHistoryMenu(_provider).MostrarAsync(); break;
                 case "Volver":                            return;
             }
         }
