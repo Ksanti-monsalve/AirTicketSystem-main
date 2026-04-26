@@ -375,4 +375,12 @@ public static class SelectorUI
             b => $"  [{b.CodigoReserva.Valor}]  {b.Estado.Valor}  {b.ValorTotal.Valor:C}",
             "Seleccione la reserva",
             "Este cliente no tiene reservas.");
+
+    /// <summary>Admin / examen: elige una reserva cualquiera (sin filtrar por cliente).</summary>
+    public static async Task<Booking?> SeleccionarReservaCualquieraAsync(IServiceProvider p)
+        => await SeleccionarAsync(p,
+            sp => sp.GetRequiredService<GetAllBookingsUseCase>().ExecuteAsync(),
+            b => $"  [{b.CodigoReserva.Valor}]  vuelo {b.VueloId}  {b.Estado.Valor}  {b.ValorTotal.Valor:C}",
+            "Seleccione la reserva",
+            "No hay reservas registradas.");
 }

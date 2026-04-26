@@ -22,29 +22,30 @@ public sealed class ReservationsMenu
         {
             SpectreHelper.MostrarTitulo("Reservas y Pasajeros");
 
+            // Orden: reserva y pasajeros → cobro y documento → abordaje y carga → cierre.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione un módulo",
                 [
                     "Reservas",
                     "Pasajeros de reserva",
-                    "Check-in",
+                    "Pagos",
                     "Tiquetes",
+                    "Check-in",
                     "Equipaje",
                     "Cargos adicionales",
-                    "Pagos",
                     "Facturas",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
-                case "Reservas":           await new BookingMenu(_provider, _session).MostrarAsync(); break;
-                case "Pasajeros de reserva": await new PassengerMenu(_provider).MostrarAsync();       break;
-                case "Check-in":           await new CheckInMenu(_provider).MostrarAsync();           break;
-                case "Tiquetes":           await new TicketAdminMenu(_provider).MostrarAsync();       break;
-                case "Equipaje":           await new LuggageAdminMenu(_provider).MostrarAsync();      break;
-                case "Cargos adicionales": await new AdditionalChargeMenu(_provider).MostrarAsync();  break;
-                case "Pagos":              await new PaymentMenu(_provider).MostrarAsync();           break;
-                case "Facturas":           await new InvoiceMenu(_provider).MostrarAsync();           break;
+                case "Reservas":            await new BookingMenu(_provider, _session).MostrarAsync(); break;
+                case "Pasajeros de reserva": await new PassengerMenu(_provider).MostrarAsync();      break;
+                case "Pagos":               await new PaymentMenu(_provider).MostrarAsync();            break;
+                case "Tiquetes":            await new TicketAdminMenu(_provider).MostrarAsync();      break;
+                case "Check-in":            await new CheckInMenu(_provider).MostrarAsync();            break;
+                case "Equipaje":            await new LuggageAdminMenu(_provider).MostrarAsync();     break;
+                case "Cargos adicionales":  await new AdditionalChargeMenu(_provider).MostrarAsync();  break;
+                case "Facturas":            await new InvoiceMenu(_provider).MostrarAsync();            break;
                 case "Volver":             return;
             }
         }

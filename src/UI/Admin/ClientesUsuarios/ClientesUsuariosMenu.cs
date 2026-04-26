@@ -16,21 +16,22 @@ public sealed class ClientesUsuariosMenu
         {
             SpectreHelper.MostrarTitulo("Gestión de Clientes y Usuarios");
 
+            // Orden: datos maestros de persona → credenciales → vínculo cliente; auditoría al final.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione un módulo",
                 [
-                    "Clientes",
-                    "Usuarios",
                     "Personas",
+                    "Usuarios",
+                    "Clientes",
                     "Log de accesos",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
-                case "Clientes":      await new ClientMenu(_provider).MostrarAsync();      break;
-                case "Usuarios":      await new UserAdminMenu(_provider).MostrarAsync();   break;
-                case "Personas":      await new PersonasMenu(_provider).MostrarAsync();    break;
-                case "Log de accesos": await new AccessLogMenu(_provider).MostrarAsync();  break;
+                case "Personas":       await new PersonasMenu(_provider).MostrarAsync();   break;
+                case "Usuarios":      await new UserAdminMenu(_provider).MostrarAsync();  break;
+                case "Clientes":      await new ClientMenu(_provider).MostrarAsync();     break;
+                case "Log de accesos": await new AccessLogMenu(_provider).MostrarAsync(); break;
                 case "Volver":        return;
             }
         }

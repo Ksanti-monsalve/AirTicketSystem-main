@@ -25,16 +25,17 @@ public sealed class BookingMenu
         {
             SpectreHelper.MostrarTitulo("Reservas");
 
+            // Orden: consultas → alta y confirmación → ajustes de vigencia → anulación.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
                     "Buscar por código",
                     "Listar por cliente",
                     "Crear reserva",
                     "Confirmar reserva",
-                    "Cancelar reserva",
                     "Extender expiración",
                     "Actualizar observaciones",
                     "Expirar reserva",
+                    "Cancelar reserva",
                     "Volver"
                 ]);
 
@@ -44,10 +45,10 @@ public sealed class BookingMenu
                 case "Listar por cliente":       await ListarPorClienteAsync();      break;
                 case "Crear reserva":            await CrearAsync();                 break;
                 case "Confirmar reserva":        await ConfirmarAsync();             break;
-                case "Cancelar reserva":         await CancelarAsync();              break;
                 case "Extender expiración":      await ExtenderAsync();              break;
                 case "Actualizar observaciones": await ActualizarObservacionesAsync(); break;
                 case "Expirar reserva":          await ExpirarAsync();               break;
+                case "Cancelar reserva":         await CancelarAsync();              break;
                 case "Volver":                   return;
             }
         }

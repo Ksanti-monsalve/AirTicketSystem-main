@@ -5,6 +5,8 @@ using AirTicketSystem.modules.booking.Domain.Repositories;
 using AirTicketSystem.modules.person.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.Repositories;
 using AirTicketSystem.modules.seat.Domain.Repositories;
+using AirTicketSystem.shared.context;
+using Microsoft.EntityFrameworkCore;
 
 namespace AirTicketSystem.modules.bookingpassenger.Application.UseCases;
 
@@ -12,22 +14,25 @@ public sealed class AddPassengerUseCase
 {
     private readonly IBookingPassengerRepository  _passengerRepository;
     private readonly IBookingRepository           _bookingRepository;
-    private readonly IPersonRepository            _personRepository;
+    private readonly IPersonRepository          _personRepository;
     private readonly ISeatAvailabilityRepository  _seatAvailabilityRepository;
     private readonly ISeatRepository              _seatRepository;
+    private readonly AppDbContext                 _db;
 
     public AddPassengerUseCase(
         IBookingPassengerRepository passengerRepository,
         IBookingRepository          bookingRepository,
         IPersonRepository           personRepository,
         ISeatAvailabilityRepository seatAvailabilityRepository,
-        ISeatRepository             seatRepository)
+        ISeatRepository             seatRepository,
+        AppDbContext                 db)
     {
         _passengerRepository        = passengerRepository;
         _bookingRepository          = bookingRepository;
         _personRepository           = personRepository;
         _seatAvailabilityRepository = seatAvailabilityRepository;
         _seatRepository             = seatRepository;
+        _db                          = db;
     }
 
     public async Task<BookingPassenger> ExecuteAsync(
@@ -55,15 +60,29 @@ public sealed class AddPassengerUseCase
 
         if (asientoId.HasValue)
         {
-            // Misma lógica que SelectSeatForPassenger: al elegir asiento al crear reserva, hay que
-            // reservar en 'seats' y en disponibilidad_asientos; si no, el pasajero "tiene" asiento
-            // pero el mapa 'seets' sigue en Available y luego arroja error al re-seleccionar.
-            await ReservarAsientoEnTablasAsync(booking.VueloId, reservaId, asientoId.Value);
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var t = await _db.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    await ReservarAsientoEnTablasAsync(booking.VueloId, reservaId, asientoId.Value);
+                    var passenger = BookingPassenger.Crear(reservaId, personaId, tipoPasajero, asientoId);
+                    await _passengerRepository.SaveAsync(passenger);
+                    await t.CommitAsync(cancellationToken);
+                    return passenger;
+                }
+                catch
+                {
+                    await t.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
         }
 
-        var passenger = BookingPassenger.Crear(reservaId, personaId, tipoPasajero, asientoId);
-        await _passengerRepository.SaveAsync(passenger);
-        return passenger;
+        var p = BookingPassenger.Crear(reservaId, personaId, tipoPasajero, asientoId);
+        await _passengerRepository.SaveAsync(p);
+        return p;
     }
 
     private async Task ReservarAsientoEnTablasAsync(

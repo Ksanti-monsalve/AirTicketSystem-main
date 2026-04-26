@@ -264,4 +264,14 @@ public static class SpectreHelper
             _ => $"[white]{Esc(status)}[/]"
         };
     }
+
+    public static void MostrarLeyendaEstadosAsientoExamen()
+    {
+        AnsiConsole.MarkupLine("  [bold]Leyenda (examen):[/]  " +
+            FormatearEstadoAsientoExamen("Available") + "  " +
+            FormatearEstadoAsientoExamen("Reserved") + "  " +
+            FormatearEstadoAsientoExamen("Occupied") + "  " +
+            FormatearEstadoAsientoExamen("Blocked"));
+        AnsiConsole.WriteLine();
+    }
 }

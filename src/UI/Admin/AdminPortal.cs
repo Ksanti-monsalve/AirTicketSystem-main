@@ -2,7 +2,6 @@
 using AirTicketSystem.shared.UI;
 using AirTicketSystem.UI.Admin.GeoConfig;
 using AirTicketSystem.UI.Admin.Aeronautica;
-using AirTicketSystem.UI.Admin.AirportsRoutes;
 using AirTicketSystem.UI.Admin.Personal;
 using AirTicketSystem.UI.Admin.Flights;
 using AirTicketSystem.UI.Admin.ClientesUsuarios;

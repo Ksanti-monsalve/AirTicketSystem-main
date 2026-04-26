@@ -22,13 +22,14 @@ public sealed class ClientPortal
             SpectreHelper.MostrarTitulo(
                 $"Portal Cliente  —  {_session.CurrentUserName}");
 
+            // Orden: búsqueda → reservas (gestión) → asientos examen (tras tener reserva) → perfil
             var opcion = SpectreHelper.SeleccionarOpcionTexto(
                 "¿Qué desea hacer?",
                 [
                     "1. Buscar vuelos y reservar",
-                    "2. Selección de asientos y clases (EXAMEN)",
                     "2. Mis reservas",
-                    "3. Mi perfil",
+                    "3. Selección de asientos y clases (EXAMEN)",
+                    "4. Mi perfil",
                     "Cerrar sesión"
                 ]);
 
@@ -44,15 +45,15 @@ public sealed class ClientPortal
                     await new FlightSearchMenu(_provider, _session).MostrarAsync();
                     break;
 
-                case "2. Selección de asientos y clases (EXAMEN)":
-                    await new SeatSelectionClientMenu(_provider, _session).MostrarAsync();
-                    break;
-
                 case "2. Mis reservas":
                     await new MyBookingsMenu(_provider, _session).MostrarAsync();
                     break;
 
-                case "3. Mi perfil":
+                case "3. Selección de asientos y clases (EXAMEN)":
+                    await new SeatSelectionClientMenu(_provider, _session).MostrarAsync();
+                    break;
+
+                case "4. Mi perfil":
                     await new MyProfileMenu(_provider, _session).MostrarAsync();
                     break;
             }

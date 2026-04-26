@@ -32,53 +32,57 @@ public sealed class SeatSelectionClientMenu
         {
             SpectreHelper.MostrarTitulo("CLIENTE — Selección de asientos y clases de vuelo (examen)");
 
-            // Orden alineado al enunciado (§5) + acciones de apoyo y cierre.
+            // Orden: flujo operativo (vuelo → reserva → confirmar → asiento → tiquete) y luego consultas al mapa, por último cambio de asiento.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
-                    "1. Ver asientos por vuelo",
-                    "2. Seleccionar asiento en reserva",
-                    "3. Consultar disponibilidad por clase",
-                    "4. Ver asientos ocupados",
-                    "5. Cambiar asiento",
-                    "6. Crear reserva",
-                    "7. Seleccionar vuelo",
-                    "8. Ver asientos libres de una clase",
-                    "9. Confirmar reserva",
-                    "10. Ver tiquete",
+                    "1. Seleccionar vuelo (contexto)",
+                    "2. Crear reserva",
+                    "3. Confirmar reserva",
+                    "4. Seleccionar asiento en reserva",
+                    "5. Asientos asignados a una reserva",
+                    "6. Ver tiquete",
+                    "7. Ver asientos por vuelo",
+                    "8. Consultar disponibilidad por clase",
+                    "9. Ver asientos libres de una clase",
+                    "10. Ver asientos ocupados",
+                    "11. Cambiar asiento",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
-                case "1. Ver asientos por vuelo":
-                    await VerAsientosPorVueloAsync();
-                    break;
-                case "2. Seleccionar asiento en reserva":
-                    await SeleccionarAsientoEnReservaAsync();
-                    break;
-                case "3. Consultar disponibilidad por clase":
-                    await ConsultarDisponibilidadPorClaseAsync();
-                    break;
-                case "4. Ver asientos ocupados":
-                    await VerAsientosOcupadosAsync();
-                    break;
-                case "5. Cambiar asiento":
-                    await CambiarAsientoAsync();
-                    break;
-                case "6. Crear reserva":
-                    await CrearReservaAsync();
-                    break;
-                case "7. Seleccionar vuelo":
+                case "1. Seleccionar vuelo (contexto)":
                     await SeleccionarVueloAsync();
                     break;
-                case "8. Ver asientos libres de una clase":
-                    await VerAsientosLibresDeClaseAsync();
+                case "2. Crear reserva":
+                    await CrearReservaAsync();
                     break;
-                case "9. Confirmar reserva":
+                case "3. Confirmar reserva":
                     await ConfirmarReservaAsync();
                     break;
-                case "10. Ver tiquete":
+                case "4. Seleccionar asiento en reserva":
+                    await SeleccionarAsientoEnReservaAsync();
+                    break;
+                case "5. Asientos asignados a una reserva":
+                    await AsientosAsignadosAReservaClienteAsync();
+                    break;
+                case "6. Ver tiquete":
                     await VerTiqueteAsync();
+                    break;
+                case "7. Ver asientos por vuelo":
+                    await VerAsientosPorVueloAsync();
+                    break;
+                case "8. Consultar disponibilidad por clase":
+                    await ConsultarDisponibilidadPorClaseAsync();
+                    break;
+                case "9. Ver asientos libres de una clase":
+                    await VerAsientosLibresDeClaseAsync();
+                    break;
+                case "10. Ver asientos ocupados":
+                    await VerAsientosOcupadosAsync();
+                    break;
+                case "11. Cambiar asiento":
+                    await CambiarAsientoAsync();
                     break;
                 case "Volver":
                     return;
@@ -129,6 +133,7 @@ public sealed class SeatSelectionClientMenu
                 }
                 SpectreHelper.MostrarTabla(tabla);
             }
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
             SpectreHelper.MostrarInfo($"Total asientos: {asientos.Count}");
             SpectreHelper.EsperarTecla();
         });
@@ -140,60 +145,44 @@ public sealed class SeatSelectionClientMenu
         {
             await using var scopeC = _provider.CreateAsyncScope();
             var clienteId = await ObtenerClienteIdAsync(scopeC.ServiceProvider);
-
             var reserva = await SelectorUI.SeleccionarReservaAsync(_provider, clienteId);
             if (reserva is null) return;
+            await ExamenAsientoReservaUI.EjecutarSeleccionAsientoEnReservaAsync(_provider, reserva);
+            SpectreHelper.MostrarExito("Asiento reservado; estado: Reservado (MySQL, transacción atómica).");
+            SpectreHelper.EsperarTecla();
+        });
+    }
 
-            var vueloId = reserva.VueloId;
-
+    private Task AsientosAsignadosAReservaClienteAsync()
+    {
+        return ConsoleErrorHandler.ExecuteAsync(async () =>
+        {
+            await using var scopeC = _provider.CreateAsyncScope();
+            var clienteId = await ObtenerClienteIdAsync(scopeC.ServiceProvider);
+            var reserva = await SelectorUI.SeleccionarReservaAsync(_provider, clienteId);
+            if (reserva is null) return;
             await using var scope = _provider.CreateAsyncScope();
-            var pasajeros = await scope.ServiceProvider
-                .GetRequiredService<GetPassengersByBookingUseCase>()
-                .ExecuteAsync(reserva.Id);
-            if (pasajeros.Count == 0)
-                throw new InvalidOperationException("La reserva no tiene pasajeros.");
-
-            var pasajero = SpectreHelper.SeleccionarOpcion(
-                "Seleccione el pasajero",
-                pasajeros,
-                p => $"  Pasajero reserva #{p.Id}  persona {p.PersonaId}  tipo: {p.TipoPasajero.Valor}  " +
-                    $"asiento: {(p.AsientoId?.ToString() ?? "sin asignar")}");
-
-            if (pasajero.AsientoId.HasValue)
-                throw new InvalidOperationException(
-                    "Ese pasajero ya tiene asiento. Use «Cambiar asiento» o libérelo en admin si aplica.");
-
-            var clases = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableFlightClassesByFlightUseCase>()
-                .ExecuteAsync(vueloId);
-            if (clases.Count == 0)
-                throw new InvalidOperationException("No hay clases con asientos libres en ese vuelo.");
-
-            var claseSel = SpectreHelper.SeleccionarOpcion(
-                "Clase de vuelo",
-                clases,
-                c => $"  [{c.FlightClassCode}] {c.FlightClassName}  ({c.Available} libres)");
-
             var asientos = await scope.ServiceProvider
-                .GetRequiredService<GetAvailableSeatsByFlightAndClassUseCase>()
-                .ExecuteAsync(vueloId, claseSel.FlightClassId);
+                .GetRequiredService<GetSeatsByBookingUseCase>()
+                .ExecuteAsync(reserva.Id);
             if (asientos.Count == 0)
-                throw new InvalidOperationException("No hay asientos libres en esa clase.");
-
-            var asientoSel = SpectreHelper.SeleccionarOpcion(
-                "Asiento (n.º de fila y columna, p. ej. 10A)",
-                asientos,
-                s => $"  {s.SeatNumber}  —  {s.FlightClassName}");
-
-            await scope.ServiceProvider
-                .GetRequiredService<SelectSeatForPassengerUseCase>()
-                .SelectAsync(
-                    pasajeroReservaId: pasajero.Id,
-                    vueloId: vueloId,
-                    flightClassId: claseSel.FlightClassId,
-                    seatNumber: asientoSel.SeatNumber);
-
-            SpectreHelper.MostrarExito("Asiento reservado; estado actual: Reservado (persistido en MySQL).");
+            {
+                SpectreHelper.MostrarInfo("Esta reserva no tiene asientos asignados en el mapa del vuelo.");
+                SpectreHelper.EsperarTecla();
+                return;
+            }
+            var tabla = SpectreHelper.CrearTabla("N.º asiento", "Clase", "Estado");
+            foreach (var s in asientos.OrderBy(x => x.SeatNumber))
+            {
+                SpectreHelper.AgregarFila(tabla,
+                    s.SeatNumber,
+                    s.FlightClassName,
+                    SpectreHelper.FormatearEstadoAsientoExamen(s.Status));
+            }
+            SpectreHelper.MostrarTabla(tabla);
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
+            SpectreHelper.MostrarInfo(
+                $"Reserva [{reserva.CodigoReserva.Valor}]  asientos: {asientos.Count}");
             SpectreHelper.EsperarTecla();
         });
     }
@@ -267,6 +256,7 @@ public sealed class SeatSelectionClientMenu
                     SpectreHelper.FormatearEstadoAsientoExamen(s.Status));
             }
             SpectreHelper.MostrarTabla(tabla);
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
             SpectreHelper.MostrarInfo($"Total ocupados: {ocupados.Count}");
             SpectreHelper.EsperarTecla();
         });

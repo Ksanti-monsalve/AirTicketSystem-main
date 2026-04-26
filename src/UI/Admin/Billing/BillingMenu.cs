@@ -16,24 +16,25 @@ public sealed class BillingMenu
         {
             SpectreHelper.MostrarTitulo("Pagos, Facturación y Usuarios");
 
+            // Orden: roles y acceso; luego cobro y documento fiscal.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione un módulo",
                 [
+                    "Usuarios y roles",
                     "Pagos",
                     "Facturación",
-                    "Usuarios y roles",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
+                case "Usuarios y roles":
+                    await new UserAdminMenu(_provider).MostrarAsync();
+                    break;
                 case "Pagos":
                     await new PaymentMenu(_provider).MostrarAsync();
                     break;
                 case "Facturación":
                     await new InvoiceMenu(_provider).MostrarAsync();
-                    break;
-                case "Usuarios y roles":
-                    await new UserAdminMenu(_provider).MostrarAsync();
                     break;
                 case "Volver":
                     return;

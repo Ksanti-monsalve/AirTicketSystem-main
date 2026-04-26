@@ -25,27 +25,28 @@ public sealed class SeatClassAdminMenu
         {
             SpectreHelper.MostrarTitulo("ADMIN — Selección de asientos y clases de vuelo (examen)");
 
-            // Orden y redacción cercanos al enunciado (sección 5).
+            // Orden: configurar vuelo → inspección del mapa (disponible/ocupado/%) y reservas → operar asignaciones → ajuste de asiento.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione una acción",
                 [
-                    "1. Ver asientos por vuelo",
-                    "2. Seleccionar asiento en reserva",
+                    "1. Crear vuelo (genera mapa de asientos)",
+                    "2. Ver asientos por vuelo",
                     "3. Consultar disponibilidad por clase",
                     "4. Ver asientos ocupados",
-                    "5. Cambiar asiento",
-                    "6. Ver porcentaje de ocupación",
-                    "7. Crear vuelo",
-                    "8. Consultar reservas",
+                    "5. Ver porcentaje de ocupación",
+                    "6. Consultar reservas",
+                    "7. Seleccionar asiento en reserva",
+                    "8. Asientos asignados a una reserva",
+                    "9. Cambiar asiento (pasajeros)",
                     "Volver"
                 ]);
 
             switch (opcion)
             {
-                case "1. Ver asientos por vuelo":
-                    await VerAsientosPorVueloAsync();
+                case "1. Crear vuelo (genera mapa de asientos)":
+                    await CrearVueloAsync();
                     break;
-                case "2. Seleccionar asiento en reserva":
-                    await AvisoSeleccionAsientoReservaAsync();
+                case "2. Ver asientos por vuelo":
+                    await VerAsientosPorVueloAsync();
                     break;
                 case "3. Consultar disponibilidad por clase":
                     await VerDisponibilidadPorClaseAsync();
@@ -53,17 +54,20 @@ public sealed class SeatClassAdminMenu
                 case "4. Ver asientos ocupados":
                     await VerAsientosOcupadosAsync();
                     break;
-                case "5. Cambiar asiento":
-                    await new PassengerMenu(_provider).MostrarAsync();
-                    break;
-                case "6. Ver porcentaje de ocupación":
+                case "5. Ver porcentaje de ocupación":
                     await VerPorcentajeOcupacionAsync();
                     break;
-                case "7. Crear vuelo":
-                    await CrearVueloAsync();
-                    break;
-                case "8. Consultar reservas":
+                case "6. Consultar reservas":
                     await ConsultarReservasAsync();
+                    break;
+                case "7. Seleccionar asiento en reserva":
+                    await SeleccionarAsientoEnReservaAdminAsync();
+                    break;
+                case "8. Asientos asignados a una reserva":
+                    await AsientosAsignadosAReservaAsync();
+                    break;
+                case "9. Cambiar asiento (pasajeros)":
+                    await new PassengerMenu(_provider).MostrarAsync();
                     break;
                 case "Volver":
                     return;
@@ -71,16 +75,49 @@ public sealed class SeatClassAdminMenu
         }
     }
 
-    private static Task AvisoSeleccionAsientoReservaAsync()
+    private async Task SeleccionarAsientoEnReservaAdminAsync()
     {
-        SpectreHelper.MostrarInfo(
-            "Flujo del examen (solicitar reserva, vuelo, clases, asiento, validaciones y RESERVADO): " +
-            "use el **Portal de clientes** → **Selección de asientos y clases (examen)** → " +
-            "«Seleccionar asiento en reserva».");
-        SpectreHelper.MostrarInfo(
-            "Como administrador puede asignar por ID de disponibilidad en: **Reservas** → **Pasajeros**.");
-        SpectreHelper.EsperarTecla();
-        return Task.CompletedTask;
+        await ConsoleErrorHandler.ExecuteAsync(async () =>
+        {
+            var reserva = await SelectorUI.SeleccionarReservaCualquieraAsync(_provider);
+            if (reserva is null) return;
+            await ExamenAsientoReservaUI.EjecutarSeleccionAsientoEnReservaAsync(_provider, reserva);
+            SpectreHelper.MostrarExito("Asiento reservado; estado: Reservado (MySQL, transacción atómica).");
+            SpectreHelper.EsperarTecla();
+        });
+    }
+
+    private async Task AsientosAsignadosAReservaAsync()
+    {
+        await ConsoleErrorHandler.ExecuteAsync(async () =>
+        {
+            var reserva = await SelectorUI.SeleccionarReservaCualquieraAsync(_provider);
+            if (reserva is null) return;
+            await using var scope = _provider.CreateAsyncScope();
+            var asientos = await scope.ServiceProvider
+                .GetRequiredService<GetSeatsByBookingUseCase>()
+                .ExecuteAsync(reserva.Id);
+            if (asientos.Count == 0)
+            {
+                SpectreHelper.MostrarInfo("Esta reserva no tiene asientos asignados en el mapa del vuelo (tabla seats).");
+                SpectreHelper.EsperarTecla();
+                return;
+            }
+
+            var tabla = SpectreHelper.CrearTabla("N.º asiento", "Clase", "Estado", "ReservaId");
+            foreach (var s in asientos.OrderBy(x => x.SeatNumber))
+            {
+                SpectreHelper.AgregarFila(tabla,
+                    s.SeatNumber,
+                    s.FlightClassName,
+                    SpectreHelper.FormatearEstadoAsientoExamen(s.Status),
+                    s.BookingId?.ToString() ?? "—");
+            }
+            SpectreHelper.MostrarTabla(tabla);
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
+            SpectreHelper.MostrarInfo($"Reserva [{reserva.CodigoReserva.Valor}]  vuelo {reserva.VueloId}  asientos: {asientos.Count}");
+            SpectreHelper.EsperarTecla();
+        });
     }
 
     private static async Task<int> ResolverVueloIdExamenAsync(
@@ -156,6 +193,7 @@ public sealed class SeatClassAdminMenu
                 }
                 SpectreHelper.MostrarTabla(tabla);
             }
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
             SpectreHelper.MostrarInfo($"Total asientos: {asientos.Count}");
             SpectreHelper.EsperarTecla();
         });
@@ -187,6 +225,7 @@ public sealed class SeatClassAdminMenu
                     s.FlightClassName,
                     SpectreHelper.FormatearEstadoAsientoExamen(s.Status));
             SpectreHelper.MostrarTabla(tabla);
+            SpectreHelper.MostrarLeyendaEstadosAsientoExamen();
             SpectreHelper.MostrarInfo($"Total ocupados: {ocupados.Count}");
             SpectreHelper.EsperarTecla();
         });
@@ -226,6 +265,9 @@ public sealed class SeatClassAdminMenu
                     s.Blocked.ToString());
 
             SpectreHelper.MostrarTabla(tabla);
+            SpectreHelper.MostrarInfo(
+                "La tarifa (Fare) de la reserva define el importe; la clase de cabina define el tramo " +
+                "de asiento en el vuelo.");
             SpectreHelper.EsperarTecla();
         });
     }

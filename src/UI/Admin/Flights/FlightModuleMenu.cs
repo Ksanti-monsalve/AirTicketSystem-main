@@ -15,12 +15,13 @@ public sealed class FlightModuleMenu
         {
             SpectreHelper.MostrarTitulo("Gestión de Vuelos");
 
+            // Tras 4.1 (vuelos) sigue 4.2 (examen asientos) porque el mapa nace al crear vuelo.
             var opcion = SpectreHelper.SeleccionarOpcionTexto("Seleccione un módulo",
                 [
                     "4.1 Vuelos (CRUD + cambio estado)",
-                    "4.2 Tripulación",
-                    "4.3 Disponibilidad de asientos",
-                    "4.4 Selección de asientos y clases (EXAMEN)",
+                    "4.2 Selección de asientos y clases (EXAMEN)",
+                    "4.3 Tripulación",
+                    "4.4 Disponibilidad de asientos",
                     "4.5 Historial de vuelos",
                     "Volver"
                 ]);
@@ -28,9 +29,9 @@ public sealed class FlightModuleMenu
             switch (opcion)
             {
                 case "4.1 Vuelos (CRUD + cambio estado)": await new FlightMenu(_provider).MostrarAsync();       break;
-                case "4.2 Tripulación":                   await new FlightCrewMenu(_provider).MostrarAsync();   break;
-                case "4.3 Disponibilidad de asientos":    await new SeatAvailabilityMenu(_provider).MostrarAsync(); break;
-                case "4.4 Selección de asientos y clases (EXAMEN)": await new SeatClassAdminMenu(_provider).MostrarAsync(); break;
+                case "4.2 Selección de asientos y clases (EXAMEN)": await new SeatClassAdminMenu(_provider).MostrarAsync(); break;
+                case "4.3 Tripulación":                   await new FlightCrewMenu(_provider).MostrarAsync();   break;
+                case "4.4 Disponibilidad de asientos":    await new SeatAvailabilityMenu(_provider).MostrarAsync(); break;
                 case "4.5 Historial de vuelos":           await new FlightHistoryMenu(_provider).MostrarAsync(); break;
                 case "Volver":                            return;
             }
