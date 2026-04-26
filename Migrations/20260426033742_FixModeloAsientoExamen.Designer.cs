@@ -4,6 +4,7 @@ using AirTicketSystem.shared.context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AirTicketSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260426033742_FixModeloAsientoExamen")]
+    partial class FixModeloAsientoExamen
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1199,43 +1202,6 @@ namespace AirTicketSystem.Migrations
                         });
                 });
 
-            modelBuilder.Entity("AirTicketSystem.modules.flightclass.Infrastructure.entity.FlightClassEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("flight_classes", (string)null);
-                });
-
             modelBuilder.Entity("AirTicketSystem.modules.flightcrew.Infrastructure.entity.FlightCrewEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -2095,62 +2061,6 @@ namespace AirTicketSystem.Migrations
                         });
                 });
 
-            modelBuilder.Entity("AirTicketSystem.modules.seat.Infrastructure.entity.SeatEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("BookingId")
-                        .HasColumnType("int")
-                        .HasColumnName("booking_id");
-
-                    b.Property<int>("FlightClassId")
-                        .HasColumnType("int")
-                        .HasColumnName("flight_class_id");
-
-                    b.Property<int>("FlightId")
-                        .HasColumnType("int")
-                        .HasColumnName("flight_id");
-
-                    b.Property<string>("SeatNumber")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("varchar(5)")
-                        .HasColumnName("seat_number");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(15)
-                        .HasColumnType("varchar(15)")
-                        .HasDefaultValue("Available")
-                        .HasColumnName("status");
-
-                    b.Property<int?>("TicketId")
-                        .HasColumnType("int")
-                        .HasColumnName("ticket_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId");
-
-                    b.HasIndex("FlightClassId");
-
-                    b.HasIndex("TicketId");
-
-                    b.HasIndex("FlightId", "SeatNumber")
-                        .IsUnique();
-
-                    b.ToTable("seats", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_seat_status", "status IN ('Available','Reserved','Occupied','Blocked')");
-                        });
-                });
-
             modelBuilder.Entity("AirTicketSystem.modules.seatavailability.Infrastructure.entity.SeatAvailabilityEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -2197,8 +2107,6 @@ namespace AirTicketSystem.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AsientoId");
-
-                    b.HasIndex("ClaseVueloId");
 
                     b.HasIndex("ReservaId");
 
@@ -3228,50 +3136,11 @@ namespace AirTicketSystem.Migrations
                     b.Navigation("Origen");
                 });
 
-            modelBuilder.Entity("AirTicketSystem.modules.seat.Infrastructure.entity.SeatEntity", b =>
-                {
-                    b.HasOne("AirTicketSystem.modules.booking.Infrastructure.entity.BookingEntity", "Booking")
-                        .WithMany()
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("AirTicketSystem.modules.flightclass.Infrastructure.entity.FlightClassEntity", "FlightClass")
-                        .WithMany()
-                        .HasForeignKey("FlightClassId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AirTicketSystem.modules.flight.Infrastructure.entity.FlightEntity", "Flight")
-                        .WithMany()
-                        .HasForeignKey("FlightId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AirTicketSystem.modules.ticket.Infrastructure.entity.TicketEntity", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Flight");
-
-                    b.Navigation("FlightClass");
-
-                    b.Navigation("Ticket");
-                });
-
             modelBuilder.Entity("AirTicketSystem.modules.seatavailability.Infrastructure.entity.SeatAvailabilityEntity", b =>
                 {
                     b.HasOne("AirTicketSystem.modules.aircraftseat.Infrastructure.entity.AircraftSeatEntity", "Asiento")
                         .WithMany("Disponibilidades")
                         .HasForeignKey("AsientoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AirTicketSystem.modules.serviceclass.Infrastructure.entity.ServiceClassEntity", null)
-                        .WithMany()
-                        .HasForeignKey("ClaseVueloId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

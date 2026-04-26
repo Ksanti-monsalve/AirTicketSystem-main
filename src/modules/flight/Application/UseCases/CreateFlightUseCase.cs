@@ -7,6 +7,10 @@ using AirTicketSystem.modules.aircraftseat.Domain.Repositories;
 using AirTicketSystem.modules.gate.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.aggregate;
+using AirTicketSystem.modules.seat.Domain.Repositories;
+using AirTicketSystem.modules.seat.Infrastructure.entity;
+using AirTicketSystem.shared.context;
+using Microsoft.EntityFrameworkCore;
 
 namespace AirTicketSystem.modules.flight.Application.UseCases;
 
@@ -18,6 +22,8 @@ public sealed class CreateFlightUseCase
     private readonly IAircraftSeatRepository    _seatRepository;
     private readonly IGateRepository            _gateRepository;
     private readonly ISeatAvailabilityRepository _availabilityRepository;
+    private readonly ISeatRepository             _seatExamRepository;
+    private readonly AppDbContext                _db;
 
     public CreateFlightUseCase(
         IFlightRepository          flightRepository,
@@ -25,7 +31,9 @@ public sealed class CreateFlightUseCase
         IAircraftRepository        aircraftRepository,
         IAircraftSeatRepository    seatRepository,
         IGateRepository            gateRepository,
-        ISeatAvailabilityRepository availabilityRepository)
+        ISeatAvailabilityRepository availabilityRepository,
+        ISeatRepository             seatExamRepository,
+        AppDbContext                db)
     {
         _flightRepository       = flightRepository;
         _routeRepository        = routeRepository;
@@ -33,6 +41,8 @@ public sealed class CreateFlightUseCase
         _seatRepository         = seatRepository;
         _gateRepository         = gateRepository;
         _availabilityRepository = availabilityRepository;
+        _seatExamRepository     = seatExamRepository;
+        _db                     = db;
     }
 
     public async Task<Flight> ExecuteAsync(
@@ -92,10 +102,54 @@ public sealed class CreateFlightUseCase
         var asientos = await _seatRepository.FindByAvionAsync(avionId);
 
         var disponibilidades = asientos
-            .Select(a => SeatAvailability.Crear(flight.Id, a.Id))
+            .Select(a => SeatAvailability.Crear(
+                vueloId: flight.Id,
+                asientoId: a.Id,
+                numeroAsiento: a.CodigoAsiento.Valor,
+                claseVueloId: a.ClaseServicioId))
             .ToList();
 
         await _availabilityRepository.SaveAllAsync(disponibilidades);
+
+        // EXAMEN (literal): generar Seats (tabla "seats") por vuelo
+        // Map: clases_servicio -> flight_classes
+        var flightClasses = await _db.FlightClasses
+            .AsNoTracking()
+            .ToDictionaryAsync(fc => fc.Code);
+
+        int MapServiceClassToFlightClassId(string serviceClassCode)
+        {
+            var fcCode = serviceClassCode switch
+            {
+                "ECO" => "ECO",
+                "EJE" => "BUS",
+                "PRC" => "FST",
+                _     => "ECO"
+            };
+
+            if (!flightClasses.TryGetValue(fcCode, out var fc))
+                throw new InvalidOperationException(
+                    $"No existe FlightClass con code '{fcCode}'. Ejecute migraciones/seed.");
+
+            return fc.Id;
+        }
+
+        // Cargar los códigos de clase de los asientos del avión
+        var asientosFull = await _db.AsientosAvion
+            .AsNoTracking()
+            .Include(a => a.ClaseServicio)
+            .Where(a => a.AvionId == avionId)
+            .ToListAsync();
+
+        var seats = asientosFull.Select(a => new SeatEntity
+        {
+            FlightId = flight.Id,
+            SeatNumber = a.CodigoAsiento,
+            FlightClassId = MapServiceClassToFlightClassId(a.ClaseServicio.Codigo),
+            Status = "Available"
+        }).ToList();
+
+        await _seatExamRepository.SaveAllAsync(seats);
 
         return flight;
     }

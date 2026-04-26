@@ -12,6 +12,7 @@ using AirTicketSystem.modules.additionalcharge.Application.UseCases;
 using AirTicketSystem.modules.client.Application.UseCases;
 using AirTicketSystem.modules.luggage.Application.UseCases;
 using AirTicketSystem.modules.luggagetype.Domain.aggregate;
+using AirTicketSystem.modules.seatavailability.Domain.Repositories;
 
 namespace AirTicketSystem.UI.Client;
 
@@ -124,12 +125,29 @@ public sealed class MyBookingsMenu
 
             if (lista.Count == 0) { SpectreHelper.MostrarInfo("Sin pasajeros en esa reserva."); SpectreHelper.EsperarTecla(); return; }
 
-            var tabla = SpectreHelper.CrearTabla("ID", "PersonaID", "Tipo", "AsientoID");
+            var saRepo = scope.ServiceProvider.GetRequiredService<ISeatAvailabilityRepository>();
+            var tabla = SpectreHelper.CrearTabla("ID", "PersonaID", "Tipo", "Asiento", "Clase");
             foreach (var p in lista)
+            {
+                var asientoTxt = "Sin asignar";
+                var claseTxt = "-";
+                if (p.AsientoId is int dispId)
+                {
+                    var detalle = await saRepo.FindDetalleByDisponibilidadIdAsync(dispId);
+                    if (detalle is not null)
+                    {
+                        asientoTxt = detalle.NumeroAsiento;
+                        claseTxt = detalle.ClaseServicioNombre;
+                    }
+                }
+
                 SpectreHelper.AgregarFila(tabla,
-                    p.Id.ToString(), p.PersonaId.ToString(),
+                    p.Id.ToString(),
+                    p.PersonaId.ToString(),
                     p.TipoPasajero.Valor,
-                    p.AsientoId?.ToString() ?? "Sin asignar");
+                    asientoTxt,
+                    claseTxt);
+            }
             SpectreHelper.MostrarTabla(tabla);
             SpectreHelper.EsperarTecla();
         });
@@ -200,9 +218,23 @@ public sealed class MyBookingsMenu
 
             var t = await scope.ServiceProvider.GetRequiredService<EmitTicketUseCase>()
                 .ExecuteAsync(pasajero.Id);
+
+            // Mostrar número de asiento y clase si el pasajero tiene asiento asignado
+            var saRepo = scope.ServiceProvider.GetRequiredService<ISeatAvailabilityRepository>();
+            string asientoTxt = "-";
+            string claseTxt   = "-";
+            if (pasajero.AsientoId is int dispId)
+            {
+                var detalle = await saRepo.FindDetalleByDisponibilidadIdAsync(dispId);
+                asientoTxt = detalle?.NumeroAsiento ?? "-";
+                claseTxt   = detalle?.ClaseServicioNombre ?? "-";
+            }
+
             SpectreHelper.MostrarExito(
                 $"Tiquete emitido.\n" +
                 $"  Código  : {t.CodigoTiquete.Valor}\n" +
+                $"  Asiento : {asientoTxt}\n" +
+                $"  Clase   : {claseTxt}\n" +
                 $"  Estado  : {t.Estado.Valor}\n" +
                 $"  Emitido : {t.FechaEmision.Valor:yyyy-MM-dd HH:mm}");
         });
@@ -229,11 +261,22 @@ public sealed class MyBookingsMenu
             var t = await scope.ServiceProvider.GetRequiredService<GetTicketByPassengerUseCase>()
                 .ExecuteAsync(pasajero.Id);
 
+            var saRepo = scope.ServiceProvider.GetRequiredService<ISeatAvailabilityRepository>();
+            var asientoTxt = "-";
+            var claseTxt = "-";
+            if (pasajero.AsientoId is int dispId)
+            {
+                var detalle = await saRepo.FindDetalleByDisponibilidadIdAsync(dispId);
+                asientoTxt = detalle?.NumeroAsiento ?? "-";
+                claseTxt = detalle?.ClaseServicioNombre ?? "-";
+            }
+
             var tabla = SpectreHelper.CrearTabla("Campo", "Valor");
             SpectreHelper.AgregarFila(tabla, "ID",              t.Id.ToString());
             SpectreHelper.AgregarFila(tabla, "Código",          t.CodigoTiquete.Valor);
             SpectreHelper.AgregarFila(tabla, "PasajeroReservaID", t.PasajeroReservaId.ToString());
-            SpectreHelper.AgregarFila(tabla, "AsientoID",       t.AsientoConfirmadoId?.ToString() ?? "-");
+            SpectreHelper.AgregarFila(tabla, "Asiento",         asientoTxt);
+            SpectreHelper.AgregarFila(tabla, "Clase",           claseTxt);
             SpectreHelper.AgregarFila(tabla, "Estado",          t.Estado.Valor);
             SpectreHelper.AgregarFila(tabla, "Fecha emisión",   t.FechaEmision.Valor.ToString("yyyy-MM-dd HH:mm"));
             SpectreHelper.MostrarTabla(tabla);

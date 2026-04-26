@@ -1,4 +1,6 @@
 // src/shared/helpers/ConsoleErrorHandler.cs
+using AirTicketSystem.shared.UI;
+
 namespace AirTicketSystem.shared.helpers;
 
 /// <summary>
@@ -82,11 +84,10 @@ public static class ConsoleErrorHandler
 
     private static void MostrarError(string tipo, string mensaje)
     {
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"  ✗ {tipo}: {mensaje}");
-        Console.ResetColor();
-        Console.WriteLine();
+        // Usar el helper de UI (Spectre) para que el mensaje
+        // no "desaparezca" cuando el menú vuelve a dibujar.
+        SpectreHelper.MostrarError($"{tipo}: {mensaje}");
+        SpectreHelper.EsperarTecla();
     }
 
     private static string ObtenerMensajeDbError(

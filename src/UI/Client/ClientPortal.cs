@@ -26,6 +26,7 @@ public sealed class ClientPortal
                 "¿Qué desea hacer?",
                 [
                     "1. Buscar vuelos y reservar",
+                    "2. Selección de asientos y clases (EXAMEN)",
                     "2. Mis reservas",
                     "3. Mi perfil",
                     "Cerrar sesión"
@@ -41,6 +42,10 @@ public sealed class ClientPortal
             {
                 case "1. Buscar vuelos y reservar":
                     await new FlightSearchMenu(_provider, _session).MostrarAsync();
+                    break;
+
+                case "2. Selección de asientos y clases (EXAMEN)":
+                    await new SeatSelectionClientMenu(_provider, _session).MostrarAsync();
                     break;
 
                 case "2. Mis reservas":

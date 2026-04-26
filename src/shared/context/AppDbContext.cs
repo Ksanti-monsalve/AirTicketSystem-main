@@ -46,8 +46,10 @@ using AirTicketSystem.modules.pilotrating.Infrastructure.entity;
 // Vuelos
 using AirTicketSystem.modules.flight.Infrastructure.entity;
 using AirTicketSystem.modules.flightcrew.Infrastructure.entity;
+using AirTicketSystem.modules.flightclass.Infrastructure.entity;
 using AirTicketSystem.modules.seatavailability.Infrastructure.entity;
 using AirTicketSystem.modules.flighthistory.Infrastructure.entity;
+using AirTicketSystem.modules.seat.Infrastructure.entity;
 
 // Tarifas y equipaje
 using AirTicketSystem.modules.fare.Infrastructure.entity;
@@ -129,6 +131,8 @@ public class AppDbContext : DbContext
     public DbSet<FlightEntity> Vuelos => Set<FlightEntity>();
     public DbSet<FlightCrewEntity> TripulacionVuelo => Set<FlightCrewEntity>();
     public DbSet<SeatAvailabilityEntity> DisponibilidadAsientos => Set<SeatAvailabilityEntity>();
+    public DbSet<FlightClassEntity> FlightClasses => Set<FlightClassEntity>();
+    public DbSet<SeatEntity> Seats => Set<SeatEntity>();
     public DbSet<FlightHistoryEntity> HistorialVuelo => Set<FlightHistoryEntity>();
 
     // ── Tarifas y equipaje ─────────────────────────────────

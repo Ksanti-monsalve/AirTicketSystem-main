@@ -48,6 +48,7 @@ using AirTicketSystem.modules.region.Domain.Repositories;
 using AirTicketSystem.modules.role.Domain.Repositories;
 using AirTicketSystem.modules.route.Domain.Repositories;
 using AirTicketSystem.modules.seatavailability.Domain.Repositories;
+using AirTicketSystem.modules.seat.Domain.Repositories;
 using AirTicketSystem.modules.serviceclass.Domain.Repositories;
 using AirTicketSystem.modules.specialty.Domain.Repositories;
 using AirTicketSystem.modules.terminal.Domain.Repositories;
@@ -98,6 +99,7 @@ using AirTicketSystem.modules.region.Infrastructure.repository;
 using AirTicketSystem.modules.role.Infrastructure.repository;
 using AirTicketSystem.modules.route.Infrastructure.repository;
 using AirTicketSystem.modules.seatavailability.Infrastructure.repository;
+using AirTicketSystem.modules.seat.Infrastructure.repository;
 using AirTicketSystem.modules.serviceclass.Infrastructure.repository;
 using AirTicketSystem.modules.specialty.Infrastructure.repository;
 using AirTicketSystem.modules.terminal.Infrastructure.repository;
@@ -145,6 +147,7 @@ using AirTicketSystem.modules.client.Application.UseCases;
 using AirTicketSystem.modules.ticket.Application.UseCases;
 using AirTicketSystem.modules.boardingpass.Application.UseCases;
 using AirTicketSystem.modules.seatavailability.Application.UseCases;
+using AirTicketSystem.modules.seat.Application.UseCases;
 using AirTicketSystem.modules.worker.Application.UseCases;
 using AirTicketSystem.modules.flightcrew.Application.UseCases;
 using AirTicketSystem.modules.pilotlicense.Application.UseCases;
@@ -230,6 +233,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository,               RoleRepository>();
         services.AddScoped<IRouteRepository,              RouteRepository>();
         services.AddScoped<ISeatAvailabilityRepository,   SeatAvailabilityRepository>();
+        services.AddScoped<ISeatRepository,              SeatRepository>();
         services.AddScoped<IServiceClassRepository,       ServiceClassRepository>();
         services.AddScoped<ISpecialtyRepository,          SpecialtyRepository>();
         services.AddScoped<ITerminalRepository,           TerminalRepository>();
@@ -516,6 +520,7 @@ public static class DependencyInjection
         services.AddScoped<GetPassengersByBookingUseCase>();
         services.AddScoped<AssignSeatUseCase>();
         services.AddScoped<ChangeSeatUseCase>();
+        services.AddScoped<SelectSeatForPassengerUseCase>();
         services.AddScoped<AirTicketSystem.modules.bookingpassenger.Application.UseCases.ReleaseSeatUseCase>();
 
         // CheckIn
@@ -588,9 +593,20 @@ public static class DependencyInjection
 
         // SeatAvailability
         services.AddScoped<GetAvailableSeatsByFlightUseCase>();
+        services.AddScoped<GetAvailableClassesByFlightUseCase>();
+        services.AddScoped<GetAvailableSeatDetailsByFlightAndClassUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seatavailability.Application.UseCases.GetSeatDetailsByFlightUseCase>();
+        services.AddScoped<GetSeatDetailsByBookingUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seatavailability.Application.UseCases.GetSeatStatsByFlightUseCase>();
         services.AddScoped<ReserveSeatUseCase>();
         services.AddScoped<AirTicketSystem.modules.seatavailability.Application.UseCases.ReleaseSeatUseCase>();
         services.AddScoped<BlockSeatUseCase>();
+
+        // Seat (EXAM literal: tables flight_classes + seats)
+        services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetSeatDetailsByFlightUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetAvailableSeatsByFlightAndClassUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetSeatStatsByFlightUseCase>();
+        services.AddScoped<AirTicketSystem.modules.seat.Application.UseCases.GetAvailableFlightClassesByFlightUseCase>();
 
         // Worker
         services.AddScoped<CreateWorkerUseCase>();
